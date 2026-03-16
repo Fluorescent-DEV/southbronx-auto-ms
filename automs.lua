@@ -61,6 +61,25 @@ local FinishedMS = createStatLabel("✅ Finished MS", UDim2.new(0, 10, 0, 80), C
 
 -- [[ FUNCTIONS ]]
 
+local function clickText(txt)
+    local pGui = lp:WaitForChild("PlayerGui")
+    for _, v in pairs(pGui:GetDescendants()) do
+        if (v:IsA("TextButton") or v:IsA("TextLabel")) and v.Visible then
+            if string.find(string.lower(v.Text), string.lower(txt)) then
+                local target = v
+                if v:IsA("TextLabel") and v.Parent:IsA("TextButton") then target = v.Parent end
+                local pos = target.AbsolutePosition
+                local size = target.AbsoluteSize
+                VIM:SendMouseButtonEvent(pos.X + size.X/2, pos.Y + size.Y/2 + 58, 0, true, game, 1)
+                task.wait(0.05)
+                VIM:SendMouseButtonEvent(pos.X + size.X/2, pos.Y + size.Y/2 + 58, 0, false, game, 1)
+                return true
+            end
+        end
+    end
+    return false
+end
+
 local function pressE_Global()
     local char = lp.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return false end
@@ -106,25 +125,72 @@ local function safeEquip(n)
     return false
 end
 
--- [[ BUTTONS & LOGIC ]]
+-- [[ BUTTONS & INPUTS ]]
 local QtyInput = Instance.new("TextBox", MainFrame)
-QtyInput.Size = UDim2.new(0.85, 0, 0, 30); QtyInput.Position = UDim2.new(0.075, 0, 0.45, 0)
-QtyInput.PlaceholderText = "Beli berapa?"; QtyInput.Text = "100"
-QtyInput.BackgroundColor3 = Color3.fromRGB(35, 35, 35); QtyInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+QtyInput.Size = UDim2.new(0.85, 0, 0, 30)
+QtyInput.Position = UDim2.new(0.075, 0, 0.45, 0)
+QtyInput.PlaceholderText = "Beli berapa?"
+QtyInput.Text = "100"
+QtyInput.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+QtyInput.TextColor3 = Color3.fromRGB(255, 255, 255)
 Instance.new("UICorner", QtyInput)
 
+-- TOMBOL AUTO BUY
+local BuyBtn = Instance.new("TextButton", MainFrame)
+BuyBtn.Size = UDim2.new(0.85, 0, 0, 35)
+BuyBtn.Position = UDim2.new(0.075, 0, 0.56, 0)
+BuyBtn.Text = "AUTO BUY (DEALER)"
+BuyBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
+BuyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+BuyBtn.Font = Enum.Font.GothamBold
+Instance.new("UICorner", BuyBtn)
+
 local CookBtn = Instance.new("TextButton", MainFrame)
-CookBtn.Size = UDim2.new(0.85, 0, 0, 40); CookBtn.Position = UDim2.new(0.075, 0, 0.72, 0)
-CookBtn.Text = "START COOKING"; CookBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
-CookBtn.TextColor3 = Color3.fromRGB(255, 255, 255); CookBtn.Font = Enum.Font.GothamBold
+CookBtn.Size = UDim2.new(0.85, 0, 0, 40)
+CookBtn.Position = UDim2.new(0.075, 0, 0.72, 0)
+CookBtn.Text = "START COOKING"
+CookBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+CookBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CookBtn.Font = Enum.Font.GothamBold
 Instance.new("UICorner", CookBtn)
 
 local Status = Instance.new("TextLabel", MainFrame)
-Status.Size = UDim2.new(1, 0, 0, 25); Status.Position = UDim2.new(0, 0, 0.88, 0)
-Status.Text = "Status: Idle"; Status.TextColor3 = Color3.fromRGB(180, 180, 180)
-Status.BackgroundTransparency = 1; Status.Font = Enum.Font.Gotham; Status.TextSize = 11
+Status.Size = UDim2.new(1, 0, 0, 25)
+Status.Position = UDim2.new(0, 0, 0.88, 0)
+Status.Text = "Status: Idle"
+Status.TextColor3 = Color3.fromRGB(180, 180, 180)
+Status.BackgroundTransparency = 1
+Status.Font = Enum.Font.Gotham
+Status.TextSize = 11
 
--- STATS REFRESH (Ditambah pengecekan bahan)
+-- [[ AUTO BUY LOGIC ]]
+BuyBtn.MouseButton1Click:Connect(function()
+    local amt = tonumber(QtyInput.Text) or 10
+    task.spawn(function()
+        Status.Text = "Status: Interacting..."
+        if pressE_Global() then
+            task.wait(2)
+            if clickText("yea") then
+                for i = 6, 1, -1 do
+                    Status.Text = "Status: Opening Shop ("..i.."s)"
+                    task.wait(1)
+                end
+                local items = {"Water", "Sugar", "Gelatin"}
+                for _, item in pairs(items) do
+                    Status.Text = "Status: Buying "..item
+                    for i = 1, amt do
+                        if not clickText(item) then break end
+                        task.wait(0.35)
+                    end
+                end
+                Status.Text = "Status: Done Buying!"
+            end
+        end
+        task.wait(2) Status.Text = "Status: Idle"
+    end)
+end)
+
+-- STATS REFRESH
 local hasMaterials = false
 task.spawn(function()
     while task.wait(2) do
@@ -143,12 +209,16 @@ task.spawn(function()
             end
             local combo = math.min(w, s, g)
             hasMaterials = (combo > 0)
-            WaterCount.Text = "Water : "..w; SugarCount.Text = "Sugar : "..s; GelatinCount.Text = "Gelatin : "..g
-            UnfinishedMS.Text = "⏳ Ready to Cook : "..combo; FinishedMS.Text = "✅ Finished MS : "..fi
+            WaterCount.Text = "Water : "..w
+            SugarCount.Text = "Sugar : "..s
+            GelatinCount.Text = "Gelatin : "..g
+            UnfinishedMS.Text = "⏳ Ready to Cook : "..combo
+            FinishedMS.Text = "✅ Finished MS : "..fi
         end)
     end
 end)
 
+-- [[ COOKING LOOP ]]
 _G.AutoCook = false
 CookBtn.MouseButton1Click:Connect(function()
     _G.AutoCook = not _G.AutoCook
