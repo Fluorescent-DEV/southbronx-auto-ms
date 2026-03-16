@@ -1,103 +1,143 @@
 -- AUTOMS BY FLUU - SOUTH BRONX
-local ScreenGui = Instance.new("ScreenGui")
-local MainFrame = Instance.new("Frame")
-local Title = Instance.new("TextLabel")
-local ToggleBtn = Instance.new("TextButton")
-local StatusLabel = Instance.new("TextLabel")
-local StatsFrame = Instance.new("Frame")
-
--- Dashboard Labels
-local WaterCount, SugarCount, GelatinCount, UnfinishedMS, FinishedMS
-
--- Services
 local lp = game.Players.LocalPlayer
 local VIM = game:GetService("VirtualInputManager")
 
--- Setup UI (Branding AUTOMS BY FLUU)
-ScreenGui.Name = "AutomsByFluuHub"
-ScreenGui.Parent = game:GetService("CoreGui") or lp:WaitForChild("PlayerGui")
+-- Cleanup UI
+local oldUI = game:GetService("CoreGui"):FindFirstChild("AutomsByFluuFinal") or lp.PlayerGui:FindFirstChild("AutomsByFluuFinal")
+if oldUI then oldUI:Destroy() end
 
-MainFrame.Name = "MainFrame"
-MainFrame.Parent = ScreenGui
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "AutomsByFluuFinal"
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+local success, _ = pcall(function() ScreenGui.Parent = game:GetService("CoreGui") end)
+if not success then ScreenGui.Parent = lp:WaitForChild("PlayerGui") end
+
+-- FRAME
+local MainFrame = Instance.new("Frame", ScreenGui)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-MainFrame.Position = UDim2.new(0.5, -115, 0.5, -125)
-MainFrame.Size = UDim2.new(0, 230, 0, 250)
+MainFrame.Position = UDim2.new(0.5, -115, 0.5, -175)
+MainFrame.Size = UDim2.new(0, 230, 360)
 MainFrame.Active = true
 MainFrame.Draggable = true
-Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
-local stroke = Instance.new("UIStroke", MainFrame)
-stroke.Color = Color3.fromRGB(0, 255, 150)
-stroke.Thickness = 2
+MainFrame.ZIndex = 5
+Instance.new("UICorner", MainFrame)
+Instance.new("UIStroke", MainFrame).Color = Color3.fromRGB(0, 255, 150)
 
-Title.Parent = MainFrame
+-- TITLE
+local Title = Instance.new("TextLabel", MainFrame)
 Title.Size = UDim2.new(1, 0, 0, 40)
 Title.Text = "AUTOMS BY FLUU"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 14
 Title.BackgroundTransparency = 1
+Title.TextSize = 14
+Title.ZIndex = 10
 
-StatsFrame.Parent = MainFrame
+-- DASHBOARD
+local StatsFrame = Instance.new("Frame", MainFrame)
 StatsFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-StatsFrame.Position = UDim2.new(0.05, 0, 0.18, 0)
-StatsFrame.Size = UDim2.new(0.9, 0, 0, 110)
-Instance.new("UICorner", StatsFrame).CornerRadius = UDim.new(0, 8)
+StatsFrame.Position = UDim2.new(0.05, 0, 0.12, 0)
+StatsFrame.Size = UDim2.new(0.9, 0, 0, 105)
+StatsFrame.ZIndex = 6
+Instance.new("UICorner", StatsFrame)
 
 local function createStatLabel(name, pos, color)
     local lbl = Instance.new("TextLabel", StatsFrame)
-    lbl.Size = UDim2.new(1, -10, 0, 20)
+    lbl.Size = UDim2.new(1, -10, 0, 18)
     lbl.Position = pos
     lbl.BackgroundTransparency = 1
     lbl.TextColor3 = color or Color3.fromRGB(200, 200, 200)
     lbl.TextXAlignment = Enum.TextXAlignment.Left
     lbl.Font = Enum.Font.GothamMedium
-    lbl.TextSize = 11
+    lbl.TextSize = 10
     lbl.Text = name .. " : 0"
+    lbl.ZIndex = 10
     return lbl
 end
 
-WaterCount = createStatLabel("Water Stock", UDim2.new(0, 10, 0, 5))
-SugarCount = createStatLabel("Sugar Stock", UDim2.new(0, 10, 0, 25))
-GelatinCount = createStatLabel("Gelatin Stock", UDim2.new(0, 10, 0, 45))
-UnfinishedMS = createStatLabel("⏳ Unfinished MS", UDim2.new(0, 10, 0, 65), Color3.fromRGB(255, 165, 0))
-FinishedMS = createStatLabel("✅ Finished MS", UDim2.new(0, 10, 0, 85), Color3.fromRGB(0, 255, 150))
+local WaterCount = createStatLabel("Water", UDim2.new(0, 10, 0, 5))
+local SugarCount = createStatLabel("Sugar", UDim2.new(0, 10, 0, 23))
+local GelatinCount = createStatLabel("Gelatin", UDim2.new(0, 10, 0, 41))
+local UnfinishedMS = createStatLabel("⏳ Unfinished MS", UDim2.new(0, 10, 0, 62), Color3.fromRGB(255, 165, 0))
+local FinishedMS = createStatLabel("✅ Finished MS", UDim2.new(0, 10, 0, 80), Color3.fromRGB(0, 255, 150))
 
-StatusLabel.Parent = MainFrame
-StatusLabel.Position = UDim2.new(0, 0, 0.9, 0)
-StatusLabel.Size = UDim2.new(1, 0, 0, 20)
-StatusLabel.Text = "Status: Idle"
-StatusLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
-StatusLabel.BackgroundTransparency = 1
-StatusLabel.Font = Enum.Font.Gotham
-StatusLabel.TextSize = 11
+-- INPUT JUMLAH BELI
+local QtyInput = Instance.new("TextBox", MainFrame)
+QtyInput.Size = UDim2.new(0.85, 0, 0, 30)
+QtyInput.Position = UDim2.new(0.075, 0, 0.45, 0)
+QtyInput.PlaceholderText = "Jumlah beli per item"
+QtyInput.Text = "100"
+QtyInput.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+QtyInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+QtyInput.ZIndex = 10
+Instance.new("UICorner", QtyInput)
 
-ToggleBtn.Parent = MainFrame
-ToggleBtn.Position = UDim2.new(0.1, 0, 0.65, 0)
-ToggleBtn.Size = UDim2.new(0.8, 0, 0, 40)
-ToggleBtn.Text = "START AFK"
-ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 150)
-ToggleBtn.Font = Enum.Font.GothamBold
-ToggleBtn.TextSize = 14
-Instance.new("UICorner", ToggleBtn)
+-- BUTTON BUY
+local BuyBtn = Instance.new("TextButton", MainFrame)
+BuyBtn.Size = UDim2.new(0.85, 0, 0, 35)
+BuyBtn.Position = UDim2.new(0.075, 0, 0.56, 0)
+BuyBtn.Text = "AUTO BUY"
+BuyBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
+BuyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+BuyBtn.Font = Enum.Font.GothamBold
+BuyBtn.ZIndex = 10
+Instance.new("UICorner", BuyBtn)
+
+-- BUTTON START
+local CookBtn = Instance.new("TextButton", MainFrame)
+CookBtn.Size = UDim2.new(0.85, 0, 0, 40)
+CookBtn.Position = UDim2.new(0.075, 0, 0.72, 0)
+CookBtn.Text = "START COOKING"
+CookBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+CookBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CookBtn.Font = Enum.Font.GothamBold
+CookBtn.ZIndex = 10
+Instance.new("UICorner", CookBtn)
+
+local Status = Instance.new("TextLabel", MainFrame)
+Status.Size = UDim2.new(1, 0, 0, 20)
+Status.Position = UDim2.new(0, 0, 0.9, 0)
+Status.Text = "Status: Idle"
+Status.TextColor3 = Color3.fromRGB(150, 150, 150)
+Status.BackgroundTransparency = 1
+Status.Font = Enum.Font.Gotham
+Status.TextSize = 10
+Status.ZIndex = 10
 
 _G.AutoCook = false
 
-local function pressE()
-    -- Dikurangi jumlah spamnya dari 5x ke 2x (biar enteng tapi tetep kena)
-    for i = 1, 2 do 
+-- Stats Update
+task.spawn(function()
+    while task.wait(1.5) do
         pcall(function()
-            for _, v in pairs(workspace:GetDescendants()) do
-                if v:IsA("ProximityPrompt") then
-                    local dist = (lp.Character.HumanoidRootPart.Position - v.Parent.Position).Magnitude
-                    if dist < 12 then
-                        fireproximityprompt(v)
-                    end
+            local w, s, g, un, fi = 0, 0, 0, 0, 0
+            local items = lp.Backpack:GetChildren()
+            if lp.Character then for _, v in pairs(lp.Character:GetChildren()) do if v:IsA("Tool") then table.insert(items, v) end end end
+            for _, item in pairs(items) do
+                local n = item.Name:lower()
+                if n:find("water") then w = w + 1
+                elseif n:find("sugar") and not n:find("empty") then s = s + 1
+                elseif n:find("gelatin") then g = g + 1
+                elseif n:find("marshmallow") then
+                    if n:find("unfinish") or n:find("raw") then un = un + 1 else fi = fi + 1 end
                 end
             end
+            WaterCount.Text = "Water : "..w
+            SugarCount.Text = "Sugar : "..s
+            GelatinCount.Text = "Gelatin : "..g
+            UnfinishedMS.Text = "⏳ Unfinished MS : "..un
+            FinishedMS.Text = "✅ Finished MS : "..fi
         end)
-        VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
-        task.wait(0.05) -- Jeda dikit biar gak freeze
-        VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+    end
+end)
+
+-- PRESS E
+local function pressE()
+    for _, v in pairs(workspace:GetDescendants()) do
+        if v:IsA("ProximityPrompt") then
+            local dist = (lp.Character.HumanoidRootPart.Position - v.Parent.Position).Magnitude
+            if dist < 12 then fireproximityprompt(v) end
+        end
     end
 end
 
@@ -105,102 +145,70 @@ local function autoEquip(name)
     local bp = lp:FindFirstChild("Backpack")
     local char = lp.Character
     if not bp or not char then return false end
-    
     char.Humanoid:UnequipTools()
-    task.wait(0.15)
-
+    task.wait(0.3)
     for _, tool in pairs(bp:GetChildren()) do
         if string.find(string.lower(tool.Name), string.lower(name)) then
             char.Humanoid:EquipTool(tool)
-            task.wait(0.4)
+            task.wait(0.5)
             return true
         end
     end
     return false
 end
 
--- Dashboard Sync
-spawn(function()
-    while true do
-        if _G.AutoCook then
-            pcall(function()
-                local items = lp.Backpack:GetChildren()
-                if lp.Character then for _, v in pairs(lp.Character:GetChildren()) do if v:IsA("Tool") then table.insert(items, v) end end end
-                local w, s, g, un, fi = 0, 0, 0, 0, 0
-                for _, item in pairs(items) do
-                    local n = item.Name:lower()
-                    if n:find("water") then w = w + 1
-                    elseif n:find("sugar") and not n:find("empty") then s = s + 1
-                    elseif n:find("gelatin") then g = g + 1
-                    elseif n:find("marshmallow") then
-                        if n:find("unfinish") or n:find("raw") then un = un + 1 else fi = fi + 1 end
-                    end
-                end
-                WaterCount.Text = "Water Stock : "..w
-                SugarCount.Text = "Sugar Stock : "..s
-                GelatinCount.Text = "Gelatin Stock : "..g
-                UnfinishedMS.Text = "⏳ Unfinished MS : "..un
-                FinishedMS.Text = "✅ Finished MS : "..fi
-            end)
-        end
-        task.wait(3) -- Naikin jeda update biar gak berat
+BuyBtn.MouseButton1Click:Connect(function()
+    local amt = tonumber(QtyInput.Text) or 100
+    local remote = game:GetService("ReplicatedStorage"):FindFirstChild("BuyItem", true) or game:GetService("ReplicatedStorage"):FindFirstChild("Purchase", true)
+    if remote then
+        task.spawn(function()
+            Status.Text = "Status: Buying Items..."
+            for i = 1, amt do remote:FireServer("Water") task.wait(0.2) end
+            for i = 1, amt do remote:FireServer("Sugar Block Bag") task.wait(0.2) end
+            for i = 1, amt do remote:FireServer("Gelatin") task.wait(0.2) end
+            Status.Text = "Status: Done Buying"
+            task.wait(2)
+            Status.Text = "Status: Idle"
+        end)
     end
 end)
 
-ToggleBtn.MouseButton1Click:Connect(function()
+CookBtn.MouseButton1Click:Connect(function()
     _G.AutoCook = not _G.AutoCook
-    ToggleBtn.Text = _G.AutoCook and "STOP AFK" or "START AFK"
-    ToggleBtn.BackgroundColor3 = _G.AutoCook and Color3.fromRGB(255, 50, 50) or Color3.fromRGB(0, 255, 150)
+    CookBtn.Text = _G.AutoCook and "STOP COOKING" or "START COOKING"
+    CookBtn.BackgroundColor3 = _G.AutoCook and Color3.fromRGB(0, 180, 0) or Color3.fromRGB(200, 0, 0)
 end)
 
--- Main Workflow
-spawn(function()
+-- Main Loop
+task.spawn(function()
     while true do
         task.wait(0.5)
         if _G.AutoCook then
-            -- 1. WATER (CD 20s)
             if autoEquip("Water") then
-                StatusLabel.Text = "Status: Inputting Water"
+                Status.Text = "Status: Inputting Water"
                 pressE()
-                for i = 21, 1, -1 do
-                    if not _G.AutoCook then break end
-                    StatusLabel.Text = "Status: Water CD ("..i.."s)"
-                    task.wait(1)
-                end
+                for i = 21, 1, -1 do if not _G.AutoCook then break end Status.Text = "Status: Water CD ("..i.."s)" task.wait(1) end
             end
-
-            -- 2. SUGAR
             if _G.AutoCook and autoEquip("Sugar") then
-                StatusLabel.Text = "Status: Inputting Sugar"
+                Status.Text = "Status: Inputting Sugar"
                 pressE()
-                task.wait(1.8)
+                task.wait(3)
             end
-
-            -- 3. GELATIN
             if _G.AutoCook and autoEquip("Gelatin") then
-                StatusLabel.Text = "Status: Inputting Gelatin"
+                Status.Text = "Status: Inputting Gelatin"
                 pressE()
-                task.wait(1.8)
+                task.wait(3)
             end
-
-            -- 4. COOKING (45s)
             if _G.AutoCook then
-                for i = 46, 1, -1 do
-                    if not _G.AutoCook then break end
-                    StatusLabel.Text = "Status: Cooking ("..i.."s)"
-                    task.wait(1)
-                end
+                for i = 46, 1, -1 do if not _G.AutoCook then break end Status.Text = "Status: Cooking ("..i.."s)" task.wait(1) end
             end
-
-            -- 5. COLLECT
             if _G.AutoCook and autoEquip("Empty") then
-                StatusLabel.Text = "Status: Collecting"
-                task.wait(0.3)
+                Status.Text = "Status: Collecting..."
                 pressE()
-                task.wait(3.5)
+                task.wait(5)
             end
         else
-            StatusLabel.Text = "Status: Idle"
+            Status.Text = "Status: Idle"
         end
     end
 end)
