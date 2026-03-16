@@ -5,9 +5,11 @@ local Title = Instance.new("TextLabel")
 local ToggleBtn = Instance.new("TextButton")
 local StatusLabel = Instance.new("TextLabel")
 
--- Setup UI (Bisa Digeser)
+-- Setup UI Utama
 ScreenGui.Name = "AutomsByFluu"
 ScreenGui.Parent = game:GetService("CoreGui")
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
@@ -15,18 +17,22 @@ MainFrame.Position = UDim2.new(0, 50, 0.5, -125)
 MainFrame.Size = UDim2.new(0, 220, 0, 260)
 MainFrame.Active = true
 MainFrame.Draggable = true
-Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
-Instance.new("UIStroke", MainFrame).Color = Color3.fromRGB(0, 255, 150)
 
--- Dashboard
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
+local stroke = Instance.new("UIStroke", MainFrame)
+stroke.Color = Color3.fromRGB(0, 255, 150)
+stroke.Thickness = 2
+
+-- Judul
 Title.Parent = MainFrame
 Title.Size = UDim2.new(1, 0, 0, 40)
-Title.Text = "AUTOMS BY FLUU"
+Title.Text = "STEALTH COOKER V2"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 14
 Title.BackgroundTransparency = 1
 
+-- DASHBOARD STATS
 local StatsFrame = Instance.new("Frame", MainFrame)
 StatsFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 StatsFrame.Position = UDim2.new(0.05, 0, 0.18, 0)
@@ -52,14 +58,16 @@ local GelatinCount = createStatLabel("Gelatin Stock", UDim2.new(0, 10, 0, 45))
 local UnfinishedMS = createStatLabel("⏳ Unfinished MS", UDim2.new(0, 10, 0, 65), Color3.fromRGB(255, 165, 0))
 local FinishedMS = createStatLabel("✅ Finished MS", UDim2.new(0, 10, 0, 85), Color3.fromRGB(0, 255, 150))
 
--- LOGIKA PENCET E (KEMBALI KE VERSI AWAL YANG BISA)
-function classicPressE()
+-- LOGIKA PENCET E (DARI SCRIPT YANG KAMU KASIH)
+function pressE()
     for _, v in pairs(game.Workspace:GetDescendants()) do
         if v:IsA("ProximityPrompt") then
             local p = game.Players.LocalPlayer
             if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
                 local dist = (p.Character.HumanoidRootPart.Position - v.Parent.Position).Magnitude
-                if dist < 10 then -- Jarak standar yang berhasil di awal
+                if dist < 8 then 
+                    -- Pakai delay acak sedikit biar aman seperti scriptmu
+                    task.wait(math.random(2, 5)/10) 
                     fireproximityprompt(v)
                     return true
                 end
@@ -89,7 +97,7 @@ function autoEquip(name)
     return false
 end
 
--- DASHBOARD UPDATE
+-- UPDATE DASHBOARD
 spawn(function()
     while true do
         local p = game.Players.LocalPlayer
@@ -128,7 +136,7 @@ Instance.new("UICorner", ToggleBtn)
 
 ToggleBtn.MouseButton1Click:Connect(function()
     _G.AutoCook = not _G.AutoCook
-    ToggleBtn.Text = _G.AutoCook and "STOP AFK" or "START AFK"
+    ToggleBtn.Text = _G.AutoCook and "STOP" or "START"
     ToggleBtn.BackgroundColor3 = _G.AutoCook and Color3.fromRGB(255, 50, 50) or Color3.fromRGB(0, 255, 150)
 end)
 
@@ -141,17 +149,16 @@ StatusLabel.BackgroundTransparency = 1
 StatusLabel.Font = Enum.Font.Gotham
 StatusLabel.TextSize = 11
 
--- MAIN AFK LOOP (SESUAI REQUEST: AIR -> CD 20S -> SUGAR -> GELATIN -> MASAK 45S -> AMBIL)
+-- MAIN LOOP (URUTAN FIX)
 spawn(function()
     while true do
         task.wait(1)
         if _G.AutoCook then
             -- 1. WATER -> CD 20S
-            StatusLabel.Text = "Status: Mencari Water..."
+            StatusLabel.Text = "Status: Equip Water..."
             if autoEquip("Water") then
-                task.wait(0.5)
-                StatusLabel.Text = "Status: E - Masukkan Water..."
-                if classicPressE() then
+                task.wait(0.3)
+                if pressE() then
                     for i = 20, 1, -1 do
                         if not _G.AutoCook then break end
                         StatusLabel.Text = "Status: Water CD ("..i.."s)"
@@ -163,37 +170,34 @@ spawn(function()
             if not _G.AutoCook then continue end
 
             -- 2. SUGAR
-            StatusLabel.Text = "Status: Mencari Sugar..."
+            StatusLabel.Text = "Status: Equip Sugar..."
             if autoEquip("Sugar") then
-                task.wait(0.5)
-                StatusLabel.Text = "Status: E - Masukkan Sugar..."
-                classicPressE()
-                task.wait(2)
+                task.wait(0.3)
+                pressE()
+                task.wait(1.5)
             end
 
             -- 3. GELATIN
-            StatusLabel.Text = "Status: Mencari Gelatin..."
+            StatusLabel.Text = "Status: Equip Gelatin..."
             if autoEquip("Gelatin") then
-                task.wait(0.5)
-                StatusLabel.Text = "Status: E - Masukkan Gelatin..."
-                classicPressE()
-                task.wait(2)
+                task.wait(0.3)
+                pressE()
+                task.wait(1.5)
             end
 
-            -- 4. MASAK CD 45S
+            -- 4. MASAK 45S
             for i = 45, 1, -1 do
                 if not _G.AutoCook then break end
-                StatusLabel.Text = "Status: Memasak ("..i.."s)"
+                StatusLabel.Text = "Status: Cooking ("..i.."s)"
                 task.wait(1)
             end
 
             -- 5. AMBIL (EMPTY BAG)
-            StatusLabel.Text = "Status: Mencari Empty Bag..."
+            StatusLabel.Text = "Status: Equip Empty Bag..."
             if autoEquip("Empty") then
-                task.wait(1)
-                StatusLabel.Text = "Status: E - Ambil Hasil!"
-                classicPressE()
-                task.wait(3)
+                task.wait(0.5)
+                pressE()
+                task.wait(5)
             end
         else
             StatusLabel.Text = "Status: Idle"
