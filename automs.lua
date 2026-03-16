@@ -24,7 +24,7 @@ MainFrame.Draggable = true
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
 local stroke = Instance.new("UIStroke", MainFrame)
 stroke.Color = Color3.fromRGB(0, 255, 150)
-stroke.Thickness = 1.5
+stroke.Thickness = 1.8
 
 Title.Parent = MainFrame
 Title.Size = UDim2.new(1, 0, 0, 40)
@@ -77,27 +77,29 @@ ToggleBtn.Font = Enum.Font.GothamBold
 ToggleBtn.TextSize = 14
 Instance.new("UICorner", ToggleBtn)
 
--- FUNGSI PRESS E PAKAI EVENT TRIGGER
+-- FUNGSI PRESS E BRUTAL (MENIRU SCRIPT REXXYMAYOR)
 function pressE()
-    local char = game.Players.LocalPlayer.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return false end
-
-    for _, v in pairs(game.Workspace:GetDescendants()) do
+    local player = game.Players.LocalPlayer
+    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return false end
+    
+    local found = false
+    -- Cari semua ProximityPrompt di seluruh Workspace tanpa terkecuali
+    for _, v in pairs(workspace:GetDescendants()) do
         if v:IsA("ProximityPrompt") then
-            local dist = (char.HumanoidRootPart.Position - v.Parent.Position).Magnitude
-            if dist < 12 then
-                -- TRIGGER EVENT SECARA PAKSA
-                v:InputHoldBegin()
-                task.wait(v.HoldDuration + 0.05) -- Nunggu durasi asli prompt-nya
-                v:InputHoldEnd()
-                
-                -- Signal tambahan jika server butuh konfirmasi
-                fireproximityprompt(v)
-                return true
+            local dist = (player.Character.HumanoidRootPart.Position - v.Parent.Position).Magnitude
+            if dist < 15 then -- Jarak diperluas agar lebih sensitif
+                -- Trigger paksa (Brute Force)
+                task.spawn(function()
+                    fireproximityprompt(v)
+                    v:InputHoldBegin()
+                    task.wait(0.1)
+                    v:InputHoldEnd()
+                end)
+                found = true
             end
         end
     end
-    return false
+    return found
 end
 
 function autoEquip(name)
@@ -105,23 +107,21 @@ function autoEquip(name)
     local bp = p:FindFirstChild("Backpack")
     local char = p.Character
     if not bp or not char then return false end
-    local held = char:FindFirstChildOfClass("Tool")
-    if held and string.find(string.lower(held.Name), string.lower(name)) then return true end
     for _, tool in pairs(bp:GetChildren()) do
         if string.find(string.lower(tool.Name), string.lower(name)) then
             char.Humanoid:EquipTool(tool)
-            task.wait(0.8)
+            task.wait(0.5)
             return true
         end
     end
-    return false
+    return char:FindFirstChildOfClass("Tool") and string.find(string.lower(char:FindFirstChildOfClass("Tool").Name), string.lower(name))
 end
 
--- Update Dashboard Loop
+-- Dashboard Update
 spawn(function()
     while true do
-        local p = game.Players.LocalPlayer
-        if p and p:FindFirstChild("Backpack") then
+        pcall(function()
+            local p = game.Players.LocalPlayer
             local items = p.Backpack:GetChildren()
             if p.Character then for _, v in pairs(p.Character:GetChildren()) do if v:IsA("Tool") then table.insert(items, v) end end end
             local w, s, g, un, fi = 0, 0, 0, 0, 0
@@ -139,7 +139,7 @@ spawn(function()
             GelatinCount.Text = "Gelatin Stock : "..g
             UnfinishedMS.Text = "⏳ Unfinished MS : "..un
             FinishedMS.Text = "✅ Finished MS : "..fi
-        end
+        end)
         task.wait(2)
     end
 end)
@@ -151,42 +151,45 @@ ToggleBtn.MouseButton1Click:Connect(function()
     ToggleBtn.BackgroundColor3 = _G.AutoCook and Color3.fromRGB(255, 50, 50) or Color3.fromRGB(0, 255, 150)
 end)
 
--- LOOP UTAMA
+-- LOOP UTAMA (SANGAT RIGID)
 spawn(function()
     while true do
         task.wait(1)
         if _G.AutoCook then
-            -- 1. WATER (CD 20S)
-            StatusLabel.Text = "Status: Input Water..."
+            -- 1. WATER
+            StatusLabel.Text = "Status: Mencari Water..."
             if autoEquip("Water") then
                 task.wait(0.5)
-                if pressE() then
-                    for i = 20, 1, -1 do
-                        if not _G.AutoCook then break end
-                        StatusLabel.Text = "Status: Water CD ("..i.."s)"
-                        task.wait(1)
-                    end
+                StatusLabel.Text = "Status: Memasukkan Water..."
+                pressE()
+                task.wait(1) -- Jeda biar animasi E selesai
+                for i = 20, 1, -1 do
+                    if not _G.AutoCook then break end
+                    StatusLabel.Text = "Status: Water CD ("..i.."s)"
+                    task.wait(1)
                 end
             end
-            if not _G.AutoCook then continue end
 
             -- 2. SUGAR
-            StatusLabel.Text = "Status: Input Sugar..."
+            if not _G.AutoCook then continue end
+            StatusLabel.Text = "Status: Memasukkan Gula..."
             if autoEquip("Sugar") then task.wait(0.5) pressE() task.wait(2) end
 
             -- 3. GELATIN
-            StatusLabel.Text = "Status: Input Gelatin..."
+            if not _G.AutoCook then continue end
+            StatusLabel.Text = "Status: Memasukkan Gelatin..."
             if autoEquip("Gelatin") then task.wait(0.5) pressE() task.wait(2) end
 
-            -- 4. COOKING 45S
+            -- 4. MASAK
             for i = 45, 1, -1 do
                 if not _G.AutoCook then break end
-                StatusLabel.Text = "Status: Cooking ("..i.."s)"
+                StatusLabel.Text = "Status: Memasak ("..i.."s)"
                 task.wait(1)
             end
 
-            -- 5. COLLECT
-            StatusLabel.Text = "Status: Collecting..."
+            -- 5. AMBIL
+            if not _G.AutoCook then continue end
+            StatusLabel.Text = "Status: Mengambil Hasil..."
             if autoEquip("Empty") then task.wait(1) pressE() task.wait(3) end
         else
             StatusLabel.Text = "Status: Idle"
