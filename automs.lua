@@ -9,32 +9,36 @@ if oldUI then oldUI:Destroy() end
 -- Setup GUI
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "AutomsByFluuFinal"
-ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
 local success, _ = pcall(function() ScreenGui.Parent = game:GetService("CoreGui") end)
 if not success then ScreenGui.Parent = lp:WaitForChild("PlayerGui") end
 
 local MainFrame = Instance.new("Frame", ScreenGui)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 MainFrame.Position = UDim2.new(0.5, -115, 0.5, -200)
-MainFrame.Size = UDim2.new(0, 230, 420)
+MainFrame.Size = UDim2.new(0, 230, 400)
 MainFrame.Active = true
 MainFrame.Draggable = true
+MainFrame.ZIndex = 5
 Instance.new("UICorner", MainFrame)
 Instance.new("UIStroke", MainFrame).Color = Color3.fromRGB(0, 255, 150)
 
+-- Title (Clean: No Version)
 local Title = Instance.new("TextLabel", MainFrame)
-Title.Size = UDim2.new(1, 0, 0, 40)
-Title.Text = "AUTOMS BY FLUU v20"
+Title.Size = UDim2.new(1, 0, 0, 45)
+Title.Text = "AUTOMS BY FLUU"
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.GothamBold
 Title.BackgroundTransparency = 1
-Title.TextSize = 14
+Title.TextSize = 16
+Title.ZIndex = 10
 
 -- DASHBOARD STATS
 local StatsFrame = Instance.new("Frame", MainFrame)
 StatsFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-StatsFrame.Position = UDim2.new(0.05, 0, 0.1, 0)
+StatsFrame.Position = UDim2.new(0.05, 0, 0.12, 0)
 StatsFrame.Size = UDim2.new(0.9, 0, 0, 110)
+StatsFrame.ZIndex = 6
 Instance.new("UICorner", StatsFrame)
 
 local function createStatLabel(name, pos, color)
@@ -47,9 +51,11 @@ local function createStatLabel(name, pos, color)
     lbl.Font = Enum.Font.GothamMedium
     lbl.TextSize = 11
     lbl.Text = name .. " : 0"
+    lbl.ZIndex = 10
     return lbl
 end
 
+-- Dashboard Items
 local WaterCount = createStatLabel("Water", UDim2.new(0, 10, 0, 5))
 local SugarCount = createStatLabel("Sugar", UDim2.new(0, 10, 0, 25))
 local GelatinCount = createStatLabel("Gelatin", UDim2.new(0, 10, 0, 45))
@@ -59,39 +65,43 @@ local FinishedMS = createStatLabel("✅ Finished MS", UDim2.new(0, 10, 0, 85), C
 -- INPUT & BUTTONS
 local QtyInput = Instance.new("TextBox", MainFrame)
 QtyInput.Size = UDim2.new(0.85, 0, 0, 35)
-QtyInput.Position = UDim2.new(0.075, 0, 0.4, 0)
-QtyInput.PlaceholderText = "Jumlah beli (Contoh: 100)"
+QtyInput.Position = UDim2.new(0.075, 0, 0.42, 0)
+QtyInput.PlaceholderText = "Jumlah beli per item"
 QtyInput.Text = "100"
 QtyInput.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 QtyInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+QtyInput.ZIndex = 10
 Instance.new("UICorner", QtyInput)
 
 local ExecuteBuy = Instance.new("TextButton", MainFrame)
 ExecuteBuy.Size = UDim2.new(0.85, 0, 0, 40)
-ExecuteBuy.Position = UDim2.new(0.075, 0, 0.51, 0)
+ExecuteBuy.Position = UDim2.new(0.075, 0, 0.53, 0)
 ExecuteBuy.Text = "AUTO BUY"
 ExecuteBuy.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
 ExecuteBuy.TextColor3 = Color3.fromRGB(255, 255, 255)
 ExecuteBuy.Font = Enum.Font.GothamBold
+ExecuteBuy.ZIndex = 10
 Instance.new("UICorner", ExecuteBuy)
 
 local CookBtn = Instance.new("TextButton", MainFrame)
 CookBtn.Size = UDim2.new(0.85, 0, 0, 45)
-CookBtn.Position = UDim2.new(0.075, 0, 0.7, 0)
+CookBtn.Position = UDim2.new(0.075, 0, 0.72, 0)
 CookBtn.Text = "START COOKING"
 CookBtn.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
 CookBtn.Font = Enum.Font.GothamBold
 CookBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CookBtn.ZIndex = 10
 Instance.new("UICorner", CookBtn)
 
 local Status = Instance.new("TextLabel", MainFrame)
 Status.Size = UDim2.new(1, 0, 0, 30)
 Status.Position = UDim2.new(0, 0, 0.9, 0)
-Status.Text = "Status: Idle"
+Status.Text = "Status: Ready"
 Status.TextColor3 = Color3.fromRGB(150, 150, 150)
 Status.BackgroundTransparency = 1
 Status.Font = Enum.Font.Gotham
 Status.TextSize = 10
+Status.ZIndex = 10
 
 _G.AutoCook = false
 
@@ -158,6 +168,7 @@ local function autoEquip(name)
     return false
 end
 
+-- Buttons Logic
 ExecuteBuy.MouseButton1Click:Connect(function()
     local amount = tonumber(QtyInput.Text) or 100
     for _, v in pairs(workspace:GetDescendants()) do
@@ -189,7 +200,7 @@ CookBtn.MouseButton1Click:Connect(function()
     CookBtn.BackgroundColor3 = _G.AutoCook and Color3.fromRGB(0, 255, 150) or Color3.fromRGB(255, 50, 50)
 end)
 
--- Main Workflow Cook
+-- Main Loop
 task.spawn(function()
     while true do
         task.wait(0.5)
@@ -217,8 +228,6 @@ task.spawn(function()
                 pressE()
                 task.wait(4)
             end
-        else
-            Status.Text = "Status: Idle"
         end
     end
 end)
