@@ -12,19 +12,16 @@ ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
 local success, _ = pcall(function() ScreenGui.Parent = game:GetService("CoreGui") end)
 if not success then ScreenGui.Parent = lp:WaitForChild("PlayerGui") end
 
--- [[ UI CONSTRUCT ]]
+-- [[ UI DESIGN ]]
 local MainFrame = Instance.new("Frame", ScreenGui)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 MainFrame.Position = UDim2.new(0.5, -115, 0.5, -190)
 MainFrame.Size = UDim2.new(0, 230, 0, 380)
-MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.ZIndex = 5
 Instance.new("UICorner", MainFrame)
-local Stroke = Instance.new("UIStroke", MainFrame)
-Stroke.Color = Color3.fromRGB(0, 255, 150)
-Stroke.Thickness = 2
+Instance.new("UIStroke", MainFrame).Color = Color3.fromRGB(0, 255, 150)
 
 local Title = Instance.new("TextLabel", MainFrame)
 Title.Size = UDim2.new(1, 0, 0, 40)
@@ -35,7 +32,7 @@ Title.BackgroundTransparency = 1
 Title.TextSize = 14
 Title.ZIndex = 10
 
--- DASHBOARD STATS
+-- STATS PANEL
 local StatsFrame = Instance.new("Frame", MainFrame)
 StatsFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 StatsFrame.Position = UDim2.new(0.05, 0, 0.12, 0)
@@ -67,12 +64,10 @@ local FinishedMS = createStatLabel("✅ Finished MS", UDim2.new(0, 10, 0, 80), C
 local QtyInput = Instance.new("TextBox", MainFrame)
 QtyInput.Size = UDim2.new(0.85, 0, 0, 30)
 QtyInput.Position = UDim2.new(0.075, 0, 0.45, 0)
-QtyInput.PlaceholderText = "Jumlah beli per item"
+QtyInput.PlaceholderText = "Beli berapa?"
 QtyInput.Text = "100"
 QtyInput.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 QtyInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-QtyInput.Font = Enum.Font.Gotham
-QtyInput.TextSize = 12
 QtyInput.ZIndex = 10
 Instance.new("UICorner", QtyInput)
 
@@ -83,7 +78,6 @@ BuyBtn.Text = "AUTO BUY (DEALER)"
 BuyBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
 BuyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 BuyBtn.Font = Enum.Font.GothamBold
-BuyBtn.TextSize = 12
 BuyBtn.ZIndex = 10
 Instance.new("UICorner", BuyBtn)
 
@@ -94,7 +88,6 @@ CookBtn.Text = "START COOKING"
 CookBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
 CookBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 CookBtn.Font = Enum.Font.GothamBold
-CookBtn.TextSize = 12
 CookBtn.ZIndex = 10
 Instance.new("UICorner", CookBtn)
 
@@ -108,7 +101,7 @@ Status.Font = Enum.Font.Gotham
 Status.TextSize = 11
 Status.ZIndex = 10
 
--- [[ LOGIC ]]
+-- [[ FUNCTIONS ]]
 
 local function clickText(txt)
     local pGui = lp:WaitForChild("PlayerGui")
@@ -116,7 +109,7 @@ local function clickText(txt)
         if v:IsA("TextButton") and v.Visible and string.find(string.lower(v.Text), string.lower(txt)) then
             local pos = v.AbsolutePosition
             local size = v.AbsoluteSize
-            -- Offset 58
+            -- Offset 58 khusus Laptop
             VIM:SendMouseButtonEvent(pos.X + size.X/2, pos.Y + size.Y/2 + 58, 0, true, game, 1)
             task.wait(0.05)
             VIM:SendMouseButtonEvent(pos.X + size.X/2, pos.Y + size.Y/2 + 58, 0, false, game, 1)
@@ -126,18 +119,43 @@ local function clickText(txt)
     return false
 end
 
-local function pressE(target)
+local function pressE(targetName)
+    local char = lp.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return false end
+    
     for _, v in pairs(workspace:GetDescendants()) do
         if v:IsA("ProximityPrompt") then
-            local p = v.Parent
-            if (not target and v.ActionText:lower():find("cook")) or (target and p.Name:lower():find(target:lower())) then
-                local dist = (lp.Character.HumanoidRootPart.Position - p:GetModelCFrame().Position).Magnitude
-                if dist < 12 then fireproximityprompt(v) return true end
+            local parent = v.Parent
+            local match = false
+            
+            -- Lamont
+            if targetName then
+                local n = parent.Name:lower()
+                local t = v.ActionText:lower()
+                if n:find(targetName:lower()) or n:find("dealer") or t:find("talk") or t:find("interact") then
+                    match = true
+                end
+            else
+                -- Untuk masak (mencari Kompor)
+                if v.ActionText:lower():find("cook") or parent.Name:lower():find("stove") then
+                    match = true
+                end
+            end
+
+            if match then
+                local targetPos = (parent:IsA("Model") and parent:GetModelCFrame().Position) or parent.Position
+                local dist = (char.HumanoidRootPart.Position - targetPos).Magnitude
+                if dist < 15 then 
+                    fireproximityprompt(v) 
+                    return true 
+                end
             end
         end
     end
     return false
 end
+
+-- [[ LOGIC ]]
 
 _G.AutoCook = false
 
@@ -170,8 +188,9 @@ end)
 BuyBtn.MouseButton1Click:Connect(function()
     local amt = tonumber(QtyInput.Text) or 10
     task.spawn(function()
-        Status.Text = "Status: Interacting..."
-        if pressE("Lamont") or pressE("Dealer") then
+        Status.Text = "Status: Interacting with Dealer..."
+        -- Mencoba mencari Lamont atau Dealer di sekitar
+        if pressE("Lamont") then
             task.wait(1.5)
             if clickText("yea") then
                 task.wait(1.5)
@@ -180,12 +199,16 @@ BuyBtn.MouseButton1Click:Connect(function()
                     Status.Text = "Status: Buying "..item
                     for i = 1, amt do
                         clickText(item)
-                        task.wait(0.3)
+                        task.wait(0.35)
                     end
                 end
                 Status.Text = "Status: Done Buying!"
-            else Status.Text = "Status: Dialog Error" end
-        else Status.Text = "Status: Dealer Not Found" end
+            else
+                Status.Text = "Status: Dialog Not Found"
+            end
+        else
+            Status.Text = "Status: Lamont Not Found"
+        end
         task.wait(2) Status.Text = "Status: Idle"
     end)
 end)
