@@ -2,7 +2,7 @@
 local lp = game.Players.LocalPlayer
 local VIM = game:GetService("VirtualInputManager")
 
--- Cleanup UI Lama
+-- Cleanup UI
 local oldUI = game:GetService("CoreGui"):FindFirstChild("AutomsByFluuFinal") or lp.PlayerGui:FindFirstChild("AutomsByFluuFinal")
 if oldUI then oldUI:Destroy() end
 
@@ -112,10 +112,8 @@ local function clickText(txt)
                 if v:IsA("TextLabel") and v.Parent:IsA("TextButton") then
                     target = v.Parent
                 end
-                
                 local pos = target.AbsolutePosition
                 local size = target.AbsoluteSize
-                
                 VIM:SendMouseButtonEvent(pos.X + size.X/2, pos.Y + size.Y/2 + 58, 0, true, game, 1)
                 task.wait(0.05)
                 VIM:SendMouseButtonEvent(pos.X + size.X/2, pos.Y + size.Y/2 + 58, 0, false, game, 1)
@@ -126,24 +124,18 @@ local function clickText(txt)
     return false
 end
 
-local function pressE(targetName)
+local function pressE_Smart()
     local char = lp.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return false end
+    
     for _, v in pairs(workspace:GetDescendants()) do
         if v:IsA("ProximityPrompt") then
             local parent = v.Parent
-            local match = false
-            if targetName then
-                local n = parent.Name:lower()
-                local t = v.ActionText:lower()
-                if n:find(targetName:lower()) or n:find("dealer") or t:find("talk") then match = true end
-            else
-                if v.ActionText:lower():find("cook") or parent.Name:lower():find("stove") then match = true end
-            end
-            if match then
-                local targetPos = (parent:IsA("Model") and parent:GetModelCFrame().Position) or parent.Position
-                local dist = (char.HumanoidRootPart.Position - targetPos).Magnitude
-                if dist < 15 then fireproximityprompt(v) return true end
+            local dist = (char.HumanoidRootPart.Position - v.Parent:GetModelCFrame().Position).Magnitude rescue pcall(function() dist = (char.HumanoidRootPart.Position - parent.Position).Magnitude end)
+            
+            if dist < 18 then -- Jangkauan sedikit lebih jauh
+                fireproximityprompt(v)
+                return true
             end
         end
     end
@@ -155,31 +147,31 @@ end
 BuyBtn.MouseButton1Click:Connect(function()
     local amt = tonumber(QtyInput.Text) or 10
     task.spawn(function()
-        Status.Text = "Status: Interacting..."
-        if pressE("Lamont") then
+        Status.Text = "Status: Searching Dealer..."
+        if pressE_Smart() then
             -- 1. TUNGGU 2 DETIK
             task.wait(2)
             
             Status.Text = "Status: Clicking 'Yea..'"
             if clickText("yea") then
-                -- 2. TUNGGU 8 DETIK MENU SHOP MUNCUL
+                -- 2. TUNGGU 8 DETIK MENU SHOP
                 for i = 8, 1, -1 do
                     Status.Text = "Status: Opening Shop ("..i.."s)"
                     task.wait(1)
                 end
                 
-                -- 3. MULAI BELANJA
+                -- 3. MULAI BUY
                 local items = {"Water", "Sugar", "Gelatin"}
                 for _, item in pairs(items) do
                     Status.Text = "Status: Buying "..item
                     for i = 1, amt do
                         if not clickText(item) then break end
-                        task.wait(0.35)
+                        task.wait(0.50)
                     end
                 end
                 Status.Text = "Status: Done Buying!"
             else
-                Status.Text = "Status: 'Yea' Not Found"
+                Status.Text = "Status: Dialog Not Found"
             end
         else
             Status.Text = "Status: Dealer Not Found"
@@ -220,31 +212,32 @@ task.spawn(function()
     end
 end)
 
-local function autoEquip(n)
-    local b = lp.Backpack
-    local c = lp.Character
-    if not b or not c then return false end
-    c.Humanoid:UnequipTools() task.wait(0.2)
-    for _, t in pairs(b:GetChildren()) do
-        if t.Name:lower():find(n:lower()) then c.Humanoid:EquipTool(t) task.wait(0.4) return true end
-    end
-    return false
-end
-
 task.spawn(function()
     while true do
         task.wait(0.5)
         if _G.AutoCook then
+            -- Logic masak (Water -> Sugar -> Gelatin)
+            local function autoEquip(n)
+                local b = lp.Backpack
+                local c = lp.Character
+                if not b or not c then return false end
+                c.Humanoid:UnequipTools() task.wait(0.2)
+                for _, t in pairs(b:GetChildren()) do
+                    if t.Name:lower():find(n:lower()) then c.Humanoid:EquipTool(t) task.wait(0.4) return true end
+                end
+                return false
+            end
+
             if autoEquip("Water") then 
-                Status.Text = "Status: Water" pressE() 
+                Status.Text = "Status: Water" pressE_Smart() 
                 for i=21,1,-1 do if not _G.AutoCook then break end Status.Text="Water CD("..i.."s)" task.wait(1) end 
             end
-            if _G.AutoCook and autoEquip("Sugar") then Status.Text="Status: Sugar" pressE() task.wait(3) end
-            if _G.AutoCook and autoEquip("Gelatin") then Status.Text="Status: Gelatin" pressE() task.wait(3) end
+            if _G.AutoCook and autoEquip("Sugar") then Status.Text="Status: Sugar" pressE_Smart() task.wait(3) end
+            if _G.AutoCook and autoEquip("Gelatin") then Status.Text="Status: Gelatin" pressE_Smart() task.wait(3) end
             if _G.AutoCook then 
                 for i=46,1,-1 do if not _G.AutoCook then break end Status.Text="Cooking("..i.."s)" task.wait(1) end 
             end
-            if _G.AutoCook and autoEquip("Empty") then Status.Text="Status: Collecting" pressE() task.wait(5) end
+            if _G.AutoCook and autoEquip("Empty") then Status.Text="Status: Collecting" pressE_Smart() task.wait(5) end
         end
     end
 end)
