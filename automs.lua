@@ -1,4 +1,4 @@
--- [[ AUTOMS BY FLUU - SOUTH BRONX (REXXY ENGINE) ]]
+-- AUTOMS BY FLUU - SOUTH BRONX
 local ScreenGui = Instance.new("ScreenGui")
 local MainFrame = Instance.new("Frame")
 local Title = Instance.new("TextLabel")
@@ -10,10 +10,10 @@ local StatsFrame = Instance.new("Frame")
 local WaterCount, SugarCount, GelatinCount, UnfinishedMS, FinishedMS
 
 -- Services
-local VIM = game:GetService("VirtualInputManager")
 local lp = game.Players.LocalPlayer
+local VIM = game:GetService("VirtualInputManager")
 
--- Setup UI
+-- Setup UI (AUTOMS BY FLUU)
 ScreenGui.Name = "AutomsByFluuHub"
 ScreenGui.Parent = game:GetService("CoreGui") or lp:WaitForChild("PlayerGui")
 
@@ -80,48 +80,45 @@ ToggleBtn.Font = Enum.Font.GothamBold
 ToggleBtn.TextSize = 14
 Instance.new("UICorner", ToggleBtn)
 
-function pressE()
-    for _, v in pairs(workspace:GetDescendants()) do
-        if v:IsA("ProximityPrompt") then
-            local dist = (lp.Character.HumanoidRootPart.Position - v.Parent.Position).Magnitude
-            if dist < 12 then
-                -- Teknik Rexxymayor: Trigger + Hold Simulation
-                task.spawn(function()
-                    v:InputHoldBegin()
-                    task.wait(0.1)
-                    v:InputHoldEnd()
-                    fireproximityprompt(v)
-                end)
-                -- Virtual Keyboard Simulation
-                VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
-                task.wait(0.1)
-                VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
-                return true
+_G.AutoCook = false
+
+local function pressE()
+    
+    for i = 1, 5 do 
+        task.spawn(function()
+            for _, v in pairs(workspace:GetDescendants()) do
+                if v:IsA("ProximityPrompt") then
+                    local dist = (lp.Character.HumanoidRootPart.Position - v.Parent.Position).Magnitude
+                    if dist < 15 then
+                        fireproximityprompt(v)
+                    end
+                end
             end
-        end
+        end)
+        VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+        task.wait(0.01)
+        VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
     end
-    return false
 end
 
-function autoEquip(name)
+local function autoEquip(name)
     local bp = lp:FindFirstChild("Backpack")
     local char = lp.Character
     if not bp or not char then return false end
     
-    local held = char:FindFirstChildOfClass("Tool")
-    if held and string.find(string.lower(held.Name), string.lower(name)) then return true end
-    
+    char.Humanoid:UnequipTools()
+    task.wait(0.2)
+
     for _, tool in pairs(bp:GetChildren()) do
         if string.find(string.lower(tool.Name), string.lower(name)) then
             char.Humanoid:EquipTool(tool)
-            task.wait(0.6)
+            task.wait(0.5)
             return true
         end
     end
     return false
 end
 
--- Stats Tracker
 spawn(function()
     while true do
         pcall(function()
@@ -147,50 +144,44 @@ spawn(function()
     end
 end)
 
-_G.AutoCook = false
 ToggleBtn.MouseButton1Click:Connect(function()
     _G.AutoCook = not _G.AutoCook
     ToggleBtn.Text = _G.AutoCook and "STOP AFK" or "START AFK"
     ToggleBtn.BackgroundColor3 = _G.AutoCook and Color3.fromRGB(255, 50, 50) or Color3.fromRGB(0, 255, 150)
 end)
 
--- Main Loop
 spawn(function()
     while true do
-        task.wait(1)
+        task.wait(0.5)
         if _G.AutoCook then
-            -- 1. WATER
+            -- 1. WATER (CD 20s)
             if autoEquip("Water") then
-                StatusLabel.Text = "Status: Inputting Water..."
-                task.wait(0.4)
-                if pressE() then
-                    for i = 20, 1, -1 do
-                        if not _G.AutoCook then break end
-                        StatusLabel.Text = "Status: Water CD ("..i.."s)"
-                        task.wait(1)
-                    end
+                StatusLabel.Text = "Status: Inputting Water"
+                pressE()
+                for i = 21, 1, -1 do
+                    if not _G.AutoCook then break end
+                    StatusLabel.Text = "Status: Water CD ("..i.."s)"
+                    task.wait(1)
                 end
             end
 
             -- 2. SUGAR
             if _G.AutoCook and autoEquip("Sugar") then
-                StatusLabel.Text = "Status: Inputting Sugar..."
-                task.wait(0.4)
+                StatusLabel.Text = "Status: Inputting Sugar"
                 pressE()
                 task.wait(2)
             end
 
             -- 3. GELATIN
             if _G.AutoCook and autoEquip("Gelatin") then
-                StatusLabel.Text = "Status: Inputting Gelatin..."
-                task.wait(0.4)
+                StatusLabel.Text = "Status: Inputting Gelatin"
                 pressE()
                 task.wait(2)
             end
 
-            -- 4. COOKING
+            -- 4. COOKING (45s)
             if _G.AutoCook then
-                for i = 45, 1, -1 do
+                for i = 46, 1, -1 do
                     if not _G.AutoCook then break end
                     StatusLabel.Text = "Status: Cooking ("..i.."s)"
                     task.wait(1)
@@ -199,10 +190,10 @@ spawn(function()
 
             -- 5. COLLECT
             if _G.AutoCook and autoEquip("Empty") then
-                StatusLabel.Text = "Status: Collecting..."
-                task.wait(0.8)
+                StatusLabel.Text = "Status: Collecting Marshmallow"
+                task.wait(0.5)
                 pressE()
-                task.wait(3.5)
+                task.wait(4)
             end
         else
             StatusLabel.Text = "Status: Idle"
