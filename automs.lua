@@ -1,4 +1,4 @@
--- AUTOMS BY FLUU - SOUTH BRONX
+-- [[ AUTOMS BY FLUU - SOUTH BRONX (REXXY ENGINE) ]]
 local ScreenGui = Instance.new("ScreenGui")
 local MainFrame = Instance.new("Frame")
 local Title = Instance.new("TextLabel")
@@ -9,10 +9,13 @@ local StatsFrame = Instance.new("Frame")
 -- Dashboard Labels
 local WaterCount, SugarCount, GelatinCount, UnfinishedMS, FinishedMS
 
--- Setup UI (Nama Tetap AUTOMS BY FLUU)
+-- Services
+local VIM = game:GetService("VirtualInputManager")
+local lp = game.Players.LocalPlayer
+
+-- Setup UI
 ScreenGui.Name = "AutomsByFluuHub"
-local parent = game:GetService("CoreGui") or game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
-ScreenGui.Parent = parent
+ScreenGui.Parent = game:GetService("CoreGui") or lp:WaitForChild("PlayerGui")
 
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
@@ -24,7 +27,7 @@ MainFrame.Draggable = true
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
 local stroke = Instance.new("UIStroke", MainFrame)
 stroke.Color = Color3.fromRGB(0, 255, 150)
-stroke.Thickness = 1.8
+stroke.Thickness = 2
 
 Title.Parent = MainFrame
 Title.Size = UDim2.new(1, 0, 0, 40)
@@ -78,31 +81,31 @@ ToggleBtn.TextSize = 14
 Instance.new("UICorner", ToggleBtn)
 
 function pressE()
-    local char = game.Players.LocalPlayer.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-
     for _, v in pairs(workspace:GetDescendants()) do
         if v:IsA("ProximityPrompt") then
-            local dist = (char.HumanoidRootPart.Position - v.Parent.Position).Magnitude
+            local dist = (lp.Character.HumanoidRootPart.Position - v.Parent.Position).Magnitude
             if dist < 12 then
-                -- INI ADALAH CARA YANG DIPAKAI EXECUTOR BESAR
-                -- Kita paksa event 'Triggered' berjalan secara manual
-                v:InputHoldBegin()
-                task.wait(v.HoldDuration + 0.1)
-                v:InputHoldEnd()
-                
-                -- Jika cara di atas gagal, paksa fire
-                fireproximityprompt(v)
+                -- Teknik Rexxymayor: Trigger + Hold Simulation
+                task.spawn(function()
+                    v:InputHoldBegin()
+                    task.wait(0.1)
+                    v:InputHoldEnd()
+                    fireproximityprompt(v)
+                end)
+                -- Virtual Keyboard Simulation
+                VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+                task.wait(0.1)
+                VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
                 return true
             end
         end
     end
+    return false
 end
 
 function autoEquip(name)
-    local p = game.Players.LocalPlayer
-    local bp = p:FindFirstChild("Backpack")
-    local char = p.Character
+    local bp = lp:FindFirstChild("Backpack")
+    local char = lp.Character
     if not bp or not char then return false end
     
     local held = char:FindFirstChildOfClass("Tool")
@@ -111,20 +114,19 @@ function autoEquip(name)
     for _, tool in pairs(bp:GetChildren()) do
         if string.find(string.lower(tool.Name), string.lower(name)) then
             char.Humanoid:EquipTool(tool)
-            task.wait(0.8)
+            task.wait(0.6)
             return true
         end
     end
     return false
 end
 
--- Dashboard Inventory (Sudah Bagus, Dipertahankan)
+-- Stats Tracker
 spawn(function()
     while true do
         pcall(function()
-            local p = game.Players.LocalPlayer
-            local items = p.Backpack:GetChildren()
-            if p.Character then for _, v in pairs(p.Character:GetChildren()) do if v:IsA("Tool") then table.insert(items, v) end end end
+            local items = lp.Backpack:GetChildren()
+            if lp.Character then for _, v in pairs(lp.Character:GetChildren()) do if v:IsA("Tool") then table.insert(items, v) end end end
             local w, s, g, un, fi = 0, 0, 0, 0, 0
             for _, item in pairs(items) do
                 local n = item.Name:lower()
@@ -158,38 +160,50 @@ spawn(function()
         task.wait(1)
         if _G.AutoCook then
             -- 1. WATER
-            StatusLabel.Text = "Status: Inputting Water..."
             if autoEquip("Water") then
-                task.wait(0.5)
-                pressE()
-                for i = 20, 1, -1 do
-                    if not _G.AutoCook then break end
-                    StatusLabel.Text = "Status: Water CD ("..i.."s)"
-                    task.wait(1)
+                StatusLabel.Text = "Status: Inputting Water..."
+                task.wait(0.4)
+                if pressE() then
+                    for i = 20, 1, -1 do
+                        if not _G.AutoCook then break end
+                        StatusLabel.Text = "Status: Water CD ("..i.."s)"
+                        task.wait(1)
+                    end
                 end
             end
 
             -- 2. SUGAR
-            if not _G.AutoCook then continue end
-            StatusLabel.Text = "Status: Inputting Sugar..."
-            if autoEquip("Sugar") then task.wait(0.5) pressE() task.wait(2) end
+            if _G.AutoCook and autoEquip("Sugar") then
+                StatusLabel.Text = "Status: Inputting Sugar..."
+                task.wait(0.4)
+                pressE()
+                task.wait(2)
+            end
 
             -- 3. GELATIN
-            if not _G.AutoCook then continue end
-            StatusLabel.Text = "Status: Inputting Gelatin..."
-            if autoEquip("Gelatin") then task.wait(0.5) pressE() task.wait(2) end
+            if _G.AutoCook and autoEquip("Gelatin") then
+                StatusLabel.Text = "Status: Inputting Gelatin..."
+                task.wait(0.4)
+                pressE()
+                task.wait(2)
+            end
 
             -- 4. COOKING
-            for i = 45, 1, -1 do
-                if not _G.AutoCook then break end
-                StatusLabel.Text = "Status: Cooking ("..i.."s)"
-                task.wait(1)
+            if _G.AutoCook then
+                for i = 45, 1, -1 do
+                    if not _G.AutoCook then break end
+                    StatusLabel.Text = "Status: Cooking ("..i.."s)"
+                    task.wait(1)
+                end
             end
 
             -- 5. COLLECT
-            if not _G.AutoCook then continue end
-            StatusLabel.Text = "Status: Collecting Result..."
-            if autoEquip("Empty") then task.wait(1) pressE() task.wait(4) end
+            if _G.AutoCook and autoEquip("Empty") then
+                StatusLabel.Text = "Status: Collecting..."
+                task.wait(0.8)
+                pressE()
+                task.wait(3.5)
+            end
         else
             StatusLabel.Text = "Status: Idle"
         end
