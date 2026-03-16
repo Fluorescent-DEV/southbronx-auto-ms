@@ -1,4 +1,4 @@
--- AUTOMS BY FLUU - SOUTH BRONX
+-- AUTOMS BY FLUU - SOUTH BRONX (DYNAMIC BAG DETECTION)
 local ScreenGui = Instance.new("ScreenGui")
 local MainFrame = Instance.new("Frame")
 local UICorner = Instance.new("UICorner")
@@ -87,7 +87,7 @@ local function updateDashboard()
     for _, name in pairs(allItems) do
         local n = name:lower()
         if n:find("water") then w = w + 1
-        elseif n:find("sugar") then s = s + 1
+        elseif n:find("sugar") and not n:find("bag") and not n:find("empty") then s = s + 1
         elseif n:find("gelatin") then g = g + 1
         elseif n:find("marshmallow") then
             if n:find("unfinish") or n:find("process") or n:find("not") or n:find("raw") or n:find("cook") then
@@ -112,110 +112,28 @@ spawn(function()
     end
 end)
 
--- Fungsi Pegang Tas Kosong
-local function equipEmptyBag()
+-- FUNGSI PEGANG TAS DENGAN LOGIKA GANDA
+local function equipBestBag()
     local p = game.Players.LocalPlayer
-    local bag = p.Backpack:FindFirstChild("Empty Bag") or p.Backpack:FindFirstChild("Bag")
+    local backpack = p:FindFirstChild("Backpack")
+    if not backpack then return false end
+
+    -- Cari "Empty Bag" dulu
+    local bag = backpack:FindFirstChild("Empty Bag")
     
-    -- Jika tidak ketemu nama "Empty Bag", cari yang namanya ada kata "Bag"
+    -- Kalau tidak ada, cari "Sugar Block Bag"
     if not bag then
-        for _, v in pairs(p.Backpack:GetChildren()) do
-            if v.Name:lower():find("bag") and v.Name:lower():find("empty") then
+        bag = backpack:FindFirstChild("Sugar Block Bag")
+    end
+
+    -- Kalau masih tidak ada, cari apapun yang namanya mengandung "Bag"
+    if not bag then
+        for _, v in pairs(backpack:GetChildren()) do
+            if v.Name:lower():find("bag") then
                 bag = v
                 break
             end
         end
     end
     
-    if bag then
-        p.Character.Humanoid:EquipTool(bag)
-        return true
-    end
-    return false
-end
-
-_G.AutoCook = false
-function pressE()
-    for _, v in pairs(game.Workspace:GetDescendants()) do
-        if v:IsA("ProximityPrompt") then
-            local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-            if hrp then
-                local dist = (hrp.Position - v.Parent.Position).Magnitude
-                if dist < 8 then 
-                    fireproximityprompt(v)
-                    return true
-                end
-            end
-        end
-    end
-    return false
-end
-
--- Button Setup
-ToggleBtn.Parent = MainFrame
-ToggleBtn.Position = UDim2.new(0.1, 0, 0.65, 0)
-ToggleBtn.Size = UDim2.new(0.8, 0, 0, 40)
-ToggleBtn.Text = "START AFK"
-ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 255, 150)
-ToggleBtn.Font = Enum.Font.GothamBold
-ToggleBtn.TextSize = 14
-ButtonCorner.Parent = ToggleBtn
-
-ToggleBtn.MouseButton1Click:Connect(function()
-    _G.AutoCook = not _G.AutoCook
-    ToggleBtn.Text = _G.AutoCook and "STOP AFK" or "START AFK"
-    ToggleBtn.BackgroundColor3 = _G.AutoCook and Color3.fromRGB(255, 50, 50) or Color3.fromRGB(0, 255, 150)
-end)
-
-StatusLabel.Parent = MainFrame
-StatusLabel.Position = UDim2.new(0, 0, 0.9, 0)
-StatusLabel.Size = UDim2.new(1, 0, 0, 20)
-StatusLabel.Text = "System: Idle"
-StatusLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
-StatusLabel.BackgroundTransparency = 1
-StatusLabel.Font = Enum.Font.Gotham
-StatusLabel.TextSize = 11
-
--- MAIN LOOP
-spawn(function()
-    while true do
-        task.wait(0.5)
-        if _G.AutoCook then
-            -- 1. Masukkan Air
-            StatusLabel.Text = "System: Adding Water..."
-            if pressE() then 
-                for i = 10, 1, -1 do
-                    if not _G.AutoCook then break end
-                    StatusLabel.Text = "System: Water CD ("..i.."s)"
-                    task.wait(1)
-                end
-            end
-            
-            if not _G.AutoCook then continue end
-            
-            -- 2. Mixing Bahan
-            StatusLabel.Text = "System: Mixing..."
-            pressE() task.wait(1)
-            pressE()
-            
-            -- 3. Proses Masak
-            for i = 46, 1, -1 do
-                if not _G.AutoCook then break end
-                StatusLabel.Text = "System: Cooking ("..i.."s)"
-                task.wait(1)
-            end
-            
-            if not _G.AutoCook then continue end
-
-            -- 4. AUTO-EQUIP BAG & COLLECT
-            StatusLabel.Text = "System: Equipping Bag..."
-            equipEmptyBag() -- Pegang tasnya dulu
-            task.wait(0.5)
-            StatusLabel.Text = "System: Collecting MS..."
-            pressE()
-            task.wait(0.5)
-        else
-            StatusLabel.Text = "System: Idle"
-        end
-    end
-end)
+    if
