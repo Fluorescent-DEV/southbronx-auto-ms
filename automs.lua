@@ -9,7 +9,7 @@ local StatsFrame = Instance.new("Frame")
 -- Dashboard Labels
 local WaterCount, SugarCount, GelatinCount, UnfinishedMS, FinishedMS
 
--- Setup UI
+-- Setup UI (Nama Tetap AUTOMS BY FLUU)
 ScreenGui.Name = "AutomsByFluuHub"
 local parent = game:GetService("CoreGui") or game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.Parent = parent
@@ -77,29 +77,26 @@ ToggleBtn.Font = Enum.Font.GothamBold
 ToggleBtn.TextSize = 14
 Instance.new("UICorner", ToggleBtn)
 
--- FUNGSI PRESS E BRUTAL (MENIRU SCRIPT REXXYMAYOR)
 function pressE()
-    local player = game.Players.LocalPlayer
-    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return false end
-    
-    local found = false
-    -- Cari semua ProximityPrompt di seluruh Workspace tanpa terkecuali
+    local char = game.Players.LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+
     for _, v in pairs(workspace:GetDescendants()) do
         if v:IsA("ProximityPrompt") then
-            local dist = (player.Character.HumanoidRootPart.Position - v.Parent.Position).Magnitude
-            if dist < 15 then -- Jarak diperluas agar lebih sensitif
-                -- Trigger paksa (Brute Force)
-                task.spawn(function()
-                    fireproximityprompt(v)
-                    v:InputHoldBegin()
-                    task.wait(0.1)
-                    v:InputHoldEnd()
-                end)
-                found = true
+            local dist = (char.HumanoidRootPart.Position - v.Parent.Position).Magnitude
+            if dist < 12 then
+                -- INI ADALAH CARA YANG DIPAKAI EXECUTOR BESAR
+                -- Kita paksa event 'Triggered' berjalan secara manual
+                v:InputHoldBegin()
+                task.wait(v.HoldDuration + 0.1)
+                v:InputHoldEnd()
+                
+                -- Jika cara di atas gagal, paksa fire
+                fireproximityprompt(v)
+                return true
             end
         end
     end
-    return found
 end
 
 function autoEquip(name)
@@ -107,17 +104,21 @@ function autoEquip(name)
     local bp = p:FindFirstChild("Backpack")
     local char = p.Character
     if not bp or not char then return false end
+    
+    local held = char:FindFirstChildOfClass("Tool")
+    if held and string.find(string.lower(held.Name), string.lower(name)) then return true end
+    
     for _, tool in pairs(bp:GetChildren()) do
         if string.find(string.lower(tool.Name), string.lower(name)) then
             char.Humanoid:EquipTool(tool)
-            task.wait(0.5)
+            task.wait(0.8)
             return true
         end
     end
-    return char:FindFirstChildOfClass("Tool") and string.find(string.lower(char:FindFirstChildOfClass("Tool").Name), string.lower(name))
+    return false
 end
 
--- Dashboard Update
+-- Dashboard Inventory (Sudah Bagus, Dipertahankan)
 spawn(function()
     while true do
         pcall(function()
@@ -151,18 +152,16 @@ ToggleBtn.MouseButton1Click:Connect(function()
     ToggleBtn.BackgroundColor3 = _G.AutoCook and Color3.fromRGB(255, 50, 50) or Color3.fromRGB(0, 255, 150)
 end)
 
--- LOOP UTAMA (SANGAT RIGID)
+-- Main Loop
 spawn(function()
     while true do
         task.wait(1)
         if _G.AutoCook then
             -- 1. WATER
-            StatusLabel.Text = "Status: Mencari Water..."
+            StatusLabel.Text = "Status: Inputting Water..."
             if autoEquip("Water") then
                 task.wait(0.5)
-                StatusLabel.Text = "Status: Memasukkan Water..."
                 pressE()
-                task.wait(1) -- Jeda biar animasi E selesai
                 for i = 20, 1, -1 do
                     if not _G.AutoCook then break end
                     StatusLabel.Text = "Status: Water CD ("..i.."s)"
@@ -172,25 +171,25 @@ spawn(function()
 
             -- 2. SUGAR
             if not _G.AutoCook then continue end
-            StatusLabel.Text = "Status: Memasukkan Gula..."
+            StatusLabel.Text = "Status: Inputting Sugar..."
             if autoEquip("Sugar") then task.wait(0.5) pressE() task.wait(2) end
 
             -- 3. GELATIN
             if not _G.AutoCook then continue end
-            StatusLabel.Text = "Status: Memasukkan Gelatin..."
+            StatusLabel.Text = "Status: Inputting Gelatin..."
             if autoEquip("Gelatin") then task.wait(0.5) pressE() task.wait(2) end
 
-            -- 4. MASAK
+            -- 4. COOKING
             for i = 45, 1, -1 do
                 if not _G.AutoCook then break end
-                StatusLabel.Text = "Status: Memasak ("..i.."s)"
+                StatusLabel.Text = "Status: Cooking ("..i.."s)"
                 task.wait(1)
             end
 
-            -- 5. AMBIL
+            -- 5. COLLECT
             if not _G.AutoCook then continue end
-            StatusLabel.Text = "Status: Mengambil Hasil..."
-            if autoEquip("Empty") then task.wait(1) pressE() task.wait(3) end
+            StatusLabel.Text = "Status: Collecting Result..."
+            if autoEquip("Empty") then task.wait(1) pressE() task.wait(4) end
         else
             StatusLabel.Text = "Status: Idle"
         end
