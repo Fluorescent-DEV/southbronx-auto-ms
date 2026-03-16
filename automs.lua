@@ -2,6 +2,7 @@
 local lp = game.Players.LocalPlayer
 local VIM = game:GetService("VirtualInputManager")
 
+-- Cleanup UI
 local oldUI = game:GetService("CoreGui"):FindFirstChild("AutomsByFluuFinal") or lp.PlayerGui:FindFirstChild("AutomsByFluuFinal")
 if oldUI then oldUI:Destroy() end
 
@@ -11,16 +12,19 @@ ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
 local success, _ = pcall(function() ScreenGui.Parent = game:GetService("CoreGui") end)
 if not success then ScreenGui.Parent = lp:WaitForChild("PlayerGui") end
 
--- UI DESIGN
+-- [[ UI CONSTRUCT ]]
 local MainFrame = Instance.new("Frame", ScreenGui)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-MainFrame.Position = UDim2.new(0.5, -115, 0.5, -175)
-MainFrame.Size = UDim2.new(0, 230, 380)
+MainFrame.Position = UDim2.new(0.5, -115, 0.5, -190)
+MainFrame.Size = UDim2.new(0, 230, 0, 380)
+MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.ZIndex = 5
 Instance.new("UICorner", MainFrame)
-Instance.new("UIStroke", MainFrame).Color = Color3.fromRGB(0, 255, 150)
+local Stroke = Instance.new("UIStroke", MainFrame)
+Stroke.Color = Color3.fromRGB(0, 255, 150)
+Stroke.Thickness = 2
 
 local Title = Instance.new("TextLabel", MainFrame)
 Title.Size = UDim2.new(1, 0, 0, 40)
@@ -29,12 +33,14 @@ Title.TextColor3 = Color3.fromRGB(255, 255, 255)
 Title.Font = Enum.Font.GothamBold
 Title.BackgroundTransparency = 1
 Title.TextSize = 14
+Title.ZIndex = 10
 
--- DASHBOARD (STATS)
+-- DASHBOARD STATS
 local StatsFrame = Instance.new("Frame", MainFrame)
 StatsFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 StatsFrame.Position = UDim2.new(0.05, 0, 0.12, 0)
 StatsFrame.Size = UDim2.new(0.9, 0, 0, 105)
+StatsFrame.ZIndex = 6
 Instance.new("UICorner", StatsFrame)
 
 local function createStatLabel(name, pos, color)
@@ -45,8 +51,9 @@ local function createStatLabel(name, pos, color)
     lbl.TextColor3 = color or Color3.fromRGB(200, 200, 200)
     lbl.TextXAlignment = Enum.TextXAlignment.Left
     lbl.Font = Enum.Font.GothamMedium
-    lbl.TextSize = 10
+    lbl.TextSize = 11
     lbl.Text = name .. " : 0"
+    lbl.ZIndex = 10
     return lbl
 end
 
@@ -56,17 +63,19 @@ local GelatinCount = createStatLabel("Gelatin", UDim2.new(0, 10, 0, 41))
 local UnfinishedMS = createStatLabel("⏳ Unfinished MS", UDim2.new(0, 10, 0, 62), Color3.fromRGB(255, 165, 0))
 local FinishedMS = createStatLabel("✅ Finished MS", UDim2.new(0, 10, 0, 80), Color3.fromRGB(0, 255, 150))
 
--- INPUT JUMLAH
+-- INPUT & BUTTONS
 local QtyInput = Instance.new("TextBox", MainFrame)
 QtyInput.Size = UDim2.new(0.85, 0, 0, 30)
 QtyInput.Position = UDim2.new(0.075, 0, 0.45, 0)
-QtyInput.PlaceholderText = "Beli berapa per item?"
+QtyInput.PlaceholderText = "Jumlah beli per item"
 QtyInput.Text = "100"
-QtyInput.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+QtyInput.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 QtyInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+QtyInput.Font = Enum.Font.Gotham
+QtyInput.TextSize = 12
+QtyInput.ZIndex = 10
 Instance.new("UICorner", QtyInput)
 
--- TOMBOL AUTO BUY
 local BuyBtn = Instance.new("TextButton", MainFrame)
 BuyBtn.Size = UDim2.new(0.85, 0, 0, 35)
 BuyBtn.Position = UDim2.new(0.075, 0, 0.56, 0)
@@ -74,9 +83,10 @@ BuyBtn.Text = "AUTO BUY (DEALER)"
 BuyBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 255)
 BuyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 BuyBtn.Font = Enum.Font.GothamBold
+BuyBtn.TextSize = 12
+BuyBtn.ZIndex = 10
 Instance.new("UICorner", BuyBtn)
 
--- TOMBOL START COOKING
 local CookBtn = Instance.new("TextButton", MainFrame)
 CookBtn.Size = UDim2.new(0.85, 0, 0, 40)
 CookBtn.Position = UDim2.new(0.075, 0, 0.72, 0)
@@ -84,16 +94,21 @@ CookBtn.Text = "START COOKING"
 CookBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
 CookBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 CookBtn.Font = Enum.Font.GothamBold
+CookBtn.TextSize = 12
+CookBtn.ZIndex = 10
 Instance.new("UICorner", CookBtn)
 
 local Status = Instance.new("TextLabel", MainFrame)
-Status.Size = UDim2.new(1, 0, 0, 20)
-Status.Position = UDim2.new(0, 0, 0.9, 0)
+Status.Size = UDim2.new(1, 0, 0, 25)
+Status.Position = UDim2.new(0, 0, 0.88, 0)
 Status.Text = "Status: Idle"
-Status.TextColor3 = Color3.fromRGB(150, 150, 150)
+Status.TextColor3 = Color3.fromRGB(180, 180, 180)
 Status.BackgroundTransparency = 1
 Status.Font = Enum.Font.Gotham
-Status.TextSize = 10
+Status.TextSize = 11
+Status.ZIndex = 10
+
+-- [[ LOGIC ]]
 
 local function clickText(txt)
     local pGui = lp:WaitForChild("PlayerGui")
@@ -101,7 +116,7 @@ local function clickText(txt)
         if v:IsA("TextButton") and v.Visible and string.find(string.lower(v.Text), string.lower(txt)) then
             local pos = v.AbsolutePosition
             local size = v.AbsoluteSize
-            -- Offset +58 untuk akurasi klik di layar (sesuaikan jika meleset)
+            -- Offset 58
             VIM:SendMouseButtonEvent(pos.X + size.X/2, pos.Y + size.Y/2 + 58, 0, true, game, 1)
             task.wait(0.05)
             VIM:SendMouseButtonEvent(pos.X + size.X/2, pos.Y + size.Y/2 + 58, 0, false, game, 1)
@@ -126,7 +141,7 @@ end
 
 _G.AutoCook = false
 
--- Update Stats Loop
+-- Stats Loop
 task.spawn(function()
     while task.wait(1.5) do
         pcall(function()
@@ -151,11 +166,11 @@ task.spawn(function()
     end
 end)
 
--- AUTO BUY Logic
+-- BUY Logic
 BuyBtn.MouseButton1Click:Connect(function()
     local amt = tonumber(QtyInput.Text) or 10
     task.spawn(function()
-        Status.Text = "Status: Talking to Lamont..."
+        Status.Text = "Status: Interacting..."
         if pressE("Lamont") or pressE("Dealer") then
             task.wait(1.5)
             if clickText("yea") then
@@ -175,7 +190,7 @@ BuyBtn.MouseButton1Click:Connect(function()
     end)
 end)
 
--- AUTO COOK Logic
+-- COOK Logic
 CookBtn.MouseButton1Click:Connect(function()
     _G.AutoCook = not _G.AutoCook
     CookBtn.Text = _G.AutoCook and "STOP COOKING" or "START COOKING"
