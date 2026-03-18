@@ -1,4 +1,4 @@
--- [[ AUTOMS BY FLUU ]]
+-- [[ AUTOMS BY FLUU - FULL FIXED VERSION ]]
 local lp = game.Players.LocalPlayer
 local VIM = game:GetService("VirtualInputManager")
 
@@ -60,14 +60,16 @@ local FinishedMS = createStatLabel("✅ Finished MS", UDim2.new(0, 10, 0, 80), C
 
 -- 3. CORE FUNCTIONS
 local function clickText(txt)
-    for _, v in pairs(lp.PlayerGui:GetDescendants()) do
+    local pGui = lp:WaitForChild("PlayerGui")
+    for _, v in pairs(pGui:GetDescendants()) do
         if (v:IsA("TextButton") or v:IsA("TextLabel")) and v.Visible then
             if string.find(string.lower(v.Text), string.lower(txt)) then
                 local target = v
-                if v:IsA("TextLabel") and v.Parent:IsA("TextButton") then target = v.Parent end
+                if not v:IsA("TextButton") then
+                    target = v:FindFirstAncestorWhichIsA("TextButton") or v.Parent
+                end
                 local pos = target.AbsolutePosition
                 local size = target.AbsoluteSize
-                -- Offset 58 untuk menyesuaikan posisi klik di Roblox
                 VIM:SendMouseButtonEvent(pos.X + size.X/2, pos.Y + size.Y/2 + 58, 0, true, game, 1)
                 task.wait(0.05)
                 VIM:SendMouseButtonEvent(pos.X + size.X/2, pos.Y + size.Y/2 + 58, 0, false, game, 1)
@@ -100,6 +102,10 @@ local function pressE_Global()
 
     if closestPrompt then
         fireproximityprompt(closestPrompt)
+        -- Simulasi Keyboard (Penting buat South Bronx)
+        VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+        task.wait(0.1)
+        VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
         return true
     end
     return false
@@ -124,7 +130,7 @@ end
 -- 4. AUTO BUY SECTION
 local QtyInput = Instance.new("TextBox", MainFrame)
 QtyInput.Size = UDim2.new(0.85, 0, 0, 30); QtyInput.Position = UDim2.new(0.075, 0, 0.45, 0)
-QtyInput.PlaceholderText = "Beli berapa?"; QtyInput.Text = "100"
+QtyInput.PlaceholderText = "Beli berapa?"; QtyInput.Text = "2"
 QtyInput.BackgroundColor3 = Color3.fromRGB(35, 35, 35); QtyInput.TextColor3 = Color3.fromRGB(255, 255, 255)
 Instance.new("UICorner", QtyInput)
 
@@ -140,24 +146,23 @@ Status.Text = "Status: Idle"; Status.TextColor3 = Color3.fromRGB(180, 180, 180)
 Status.BackgroundTransparency = 1; Status.Font = Enum.Font.Gotham; Status.TextSize = 11
 
 BuyBtn.MouseButton1Click:Connect(function()
-    local amt = tonumber(QtyInput.Text) or 10
+    local amt = tonumber(QtyInput.Text) or 2
     task.spawn(function()
         Status.Text = "Status: Interacting..."
         if pressE_Global() then
             task.wait(2)
-            if clickText("yea") then
-                -- DELAY 6 DETIK UNTUK BUKA TOKO
+            if clickText("yea") or clickText("shop") then
                 for i = 6, 1, -1 do
                     Status.Text = "Status: Opening Shop ("..i.."s)"
                     task.wait(1)
                 end
                 
-                local items = {"Water", "Sugar", "Gelatin"}
+                local items = {"Gelatin", "Sugar Block Bag", "Water"}
                 for _, item in pairs(items) do
                     Status.Text = "Status: Buying "..item
                     for i = 1, amt do 
                         if not clickText(item) then break end 
-                        task.wait(0.35) 
+                        task.wait(0.45) 
                     end
                 end
                 Status.Text = "Status: Done Buying!"
@@ -183,36 +188,48 @@ end)
 
 task.spawn(function()
     while true do
-        task.wait(0.1)
+        task.wait(0.5)
         if _G.AutoCook then
             pcall(function()
-                local character = lp.Character
-                local humanoid = character:FindFirstChildOfClass("Humanoid")
-                
-                local function forceUse(itemName, display)
-                    local tool = lp.Backpack:FindFirstChild(itemName) or character:FindFirstChild(itemName)
-                    if tool then
+                local function cookStep(itemName, display)
+                    if not _G.AutoCook then return false end
+                    if safeEquip(itemName) then
                         Status.Text = "Status: " .. display
-                        humanoid:EquipTool(tool)
                         task.wait(0.4)
-                        repeat
-                            pressE_Global()
-                            task.wait(0.2)
-                        until not tool.Parent or not _G.AutoCook
+                        pressE_Global() -- Memanggil pressE_Global yang sudah ada VIM
+                        task.wait(1.5)
                         return true
                     end
                     return false
                 end
 
-                if forceUse("Water", "Water") then
-                    for i=21,1,-1 do if not _G.AutoCook then break end Status.Text = "Water CD ("..i.."s)"; task.wait(1) end 
+                if cookStep("Water", "Water") then
+                    for i=21,1,-1 do 
+                        if not _G.AutoCook then break end 
+                        Status.Text = "Water CD ("..i.."s)"
+                        task.wait(1) 
+                    end 
                 end
-                if _G.AutoCook then forceUse("Sugar", "Sugar") end
-                if _G.AutoCook then forceUse("Gelatin", "Gelatin") end
+                
+                if _G.AutoCook then cookStep("Sugar", "Sugar") end
+                if _G.AutoCook then cookStep("Gelatin", "Gelatin") end
+                
                 if _G.AutoCook then 
-                    for i=46,1,-1 do if not _G.AutoCook then break end Status.Text = "Cooking ("..i.."s)"; task.wait(1) end 
+                    for i=46,1,-1 do 
+                        if not _G.AutoCook then break end 
+                        Status.Text = "Cooking ("..i.."s)"
+                        task.wait(1) 
+                    end 
                 end
-                if _G.AutoCook then forceUse("Empty", "Collecting") end
+                
+                if _G.AutoCook then
+                    if safeEquip("Empty") or safeEquip("Jar") then
+                        Status.Text = "Status: Collecting..."
+                        task.wait(0.5)
+                        pressE_Global()
+                        task.wait(4)
+                    end
+                end
             end)
         end
     end
