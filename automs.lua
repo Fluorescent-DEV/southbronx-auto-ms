@@ -1,12 +1,12 @@
--- [[ AUTOMS BY FLUU - FULL FIXED VERSION ]]
+-- [[ AUTOMS BY FLUU - FULL STRUCTURED FIXED BUY ]]
 local lp = game.Players.LocalPlayer
 local VIM = game:GetService("VirtualInputManager")
 
--- 1. CLEANUP & INITIALIZATION
+-- 1. CLEANUP
 local uiName = "AutomsByFluuFinal"
 pcall(function()
     if game:GetService("CoreGui"):FindFirstChild(uiName) then game:GetService("CoreGui")[uiName]:Destroy() end
-    if lp.PlayerGui:FindFirstChild(uiName) then lp.PlayerGui:FindFirstChild(uiName):Destroy() end
+    if lp.PlayerGui:FindFirstChild(uiName) then lp.PlayerGui[uiName]:Destroy() end
 end)
 
 local ScreenGui = Instance.new("ScreenGui")
@@ -65,6 +65,7 @@ local function clickText(txt)
         if (v:IsA("TextButton") or v:IsA("TextLabel")) and v.Visible then
             if string.find(string.lower(v.Text), string.lower(txt)) then
                 local target = v
+                
                 if not v:IsA("TextButton") then
                     target = v:FindFirstAncestorWhichIsA("TextButton") or v.Parent
                 end
@@ -72,8 +73,9 @@ local function clickText(txt)
                 if target then
                     local pos = target.AbsolutePosition
                     local size = target.AbsoluteSize
+                    
                     VIM:SendMouseButtonEvent(pos.X + size.X/2, pos.Y + size.Y/2 + 58, 0, true, game, 1)
-                    task.wait(0.1)
+                    task.wait(0.05)
                     VIM:SendMouseButtonEvent(pos.X + size.X/2, pos.Y + size.Y/2 + 58, 0, false, game, 1)
                     return true
                 end
@@ -150,20 +152,21 @@ Status.BackgroundTransparency = 1; Status.Font = Enum.Font.Gotham; Status.TextSi
 BuyBtn.MouseButton1Click:Connect(function()
     local amt = tonumber(QtyInput.Text) or 2
     task.spawn(function()
-        Status.Text = "Status: Interacting Dealer..."
+        Status.Text = "Status: Interacting..."
         if pressE_Global() then
-            task.wait(1.5)
+            task.wait(2)
             if clickText("yea") or clickText("shop") then
-                task.wait(1.2)
-                local items = {"Gelatin", "Sugar", "Water"}
+                task.wait(1.5)
+                
+                local items = {"Gelatin", "Sugar Block Bag", "Water"}
                 for _, item in pairs(items) do
                     Status.Text = "Status: Buying "..item
                     for i = 1, amt do 
-                        if not clickText(item) then break end
-                        task.wait(0.45) 
+                        if not clickText(item) then break end 
+                        task.wait(0.4)
                     end
                 end
-                Status.Text = "Status: Buy Done!"
+                Status.Text = "Status: Done Buying!"
             end
         end
         task.wait(2) Status.Text = "Status: Idle"
@@ -185,54 +188,3 @@ CookBtn.MouseButton1Click:Connect(function()
 end)
 
 task.spawn(function()
-    while true do
-        task.wait(1)
-        if _G.AutoCook then
-            if safeEquip("Water") then 
-                Status.Text = "Status: Inputting Water"; task.wait(0.3)
-                pressE_Global() 
-                for i=21,1,-1 do if not _G.AutoCook then break end Status.Text = "Water CD ("..i.."s)"; task.wait(1) end 
-            end
-            if _G.AutoCook and safeEquip("Sugar") then 
-                Status.Text = "Status: Inputting Sugar"; task.wait(0.3)
-                pressE_Global(); task.wait(2) 
-            end
-            if _G.AutoCook and safeEquip("Gelatin") then 
-                Status.Text = "Status: Inputting Gelatin"; task.wait(0.3)
-                pressE_Global(); task.wait(2) 
-            end
-            if _G.AutoCook then 
-                for i=46,1,-1 do if not _G.AutoCook then break end Status.Text = "Cooking ("..i.."s)"; task.wait(1) end 
-            end
-            if _G.AutoCook and (safeEquip("Empty") or safeEquip("Jar")) then 
-                Status.Text = "Status: Collecting MS..."; task.wait(0.3)
-                pressE_Global(); task.wait(4) 
-            end
-        end
-    end
-end)
-
--- 6. STATS REFRESHER
-task.spawn(function()
-    while task.wait(2) do
-        pcall(function()
-            local w, s, g, fi = 0, 0, 0, 0
-            local inv = lp.Backpack:GetChildren()
-            if lp.Character then for _, v in pairs(lp.Character:GetChildren()) do if v:IsA("Tool") then table.insert(inv, v) end end end
-            for _, item in pairs(inv) do
-                local n = item.Name:lower()
-                if n:find("water") then w = w + 1
-                elseif n:find("sugar") and not n:find("empty") then s = s + 1
-                elseif n:find("gelatin") then g = g + 1
-                elseif n:find("marshmallow") or n:find("ms") then
-                    if not n:find("unfinish") and not n:find("raw") then fi = fi + 1 end
-                end
-            end
-            WaterCount.Text = "Water : "..w
-            SugarCount.Text = "Sugar : "..s
-            GelatinCount.Text = "Gelatin : "..g
-            UnfinishedMS.Text = "⏳ Ready to Cook : "..math.min(w, s, g)
-            FinishedMS.Text = "✅ Finished MS : "..fi
-        end)
-    end
-end)
