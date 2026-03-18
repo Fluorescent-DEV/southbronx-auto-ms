@@ -1,4 +1,4 @@
--- [[ AUTOMS BY FLUU - STRUCTURED VERSION ]]
+-- [[ AUTOMS BY FLUU - FULL FIXED VERSION ]]
 local lp = game.Players.LocalPlayer
 local VIM = game:GetService("VirtualInputManager")
 
@@ -6,7 +6,7 @@ local VIM = game:GetService("VirtualInputManager")
 local uiName = "AutomsByFluuFinal"
 pcall(function()
     if game:GetService("CoreGui"):FindFirstChild(uiName) then game:GetService("CoreGui")[uiName]:Destroy() end
-    if lp.PlayerGui:FindFirstChild(uiName) then lp.PlayerGui[uiName]:Destroy() end
+    if lp.PlayerGui:FindFirstChild(uiName) then lp.PlayerGui:FindFirstChild(uiName):Destroy() end
 end)
 
 local ScreenGui = Instance.new("ScreenGui")
@@ -65,13 +65,18 @@ local function clickText(txt)
         if (v:IsA("TextButton") or v:IsA("TextLabel")) and v.Visible then
             if string.find(string.lower(v.Text), string.lower(txt)) then
                 local target = v
-                if v:IsA("TextLabel") and v.Parent:IsA("TextButton") then target = v.Parent end
-                local pos = target.AbsolutePosition
-                local size = target.AbsoluteSize
-                VIM:SendMouseButtonEvent(pos.X + size.X/2, pos.Y + size.Y/2 + 58, 0, true, game, 1)
-                task.wait(0.05)
-                VIM:SendMouseButtonEvent(pos.X + size.X/2, pos.Y + size.Y/2 + 58, 0, false, game, 1)
-                return true
+                if not v:IsA("TextButton") then
+                    target = v:FindFirstAncestorWhichIsA("TextButton") or v.Parent
+                end
+                
+                if target then
+                    local pos = target.AbsolutePosition
+                    local size = target.AbsoluteSize
+                    VIM:SendMouseButtonEvent(pos.X + size.X/2, pos.Y + size.Y/2 + 58, 0, true, game, 1)
+                    task.wait(0.1)
+                    VIM:SendMouseButtonEvent(pos.X + size.X/2, pos.Y + size.Y/2 + 58, 0, false, game, 1)
+                    return true
+                end
             end
         end
     end
@@ -100,7 +105,7 @@ local function pressE_Global()
 
     if closestPrompt then
         fireproximityprompt(closestPrompt)
-        VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game) -- Simulasi fisik
+        VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
         task.wait(0.1)
         VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
         return true
@@ -127,7 +132,7 @@ end
 -- 4. AUTO BUY SECTION
 local QtyInput = Instance.new("TextBox", MainFrame)
 QtyInput.Size = UDim2.new(0.85, 0, 0, 30); QtyInput.Position = UDim2.new(0.075, 0, 0.45, 0)
-QtyInput.PlaceholderText = "Beli berapa?"; QtyInput.Text = "100"
+QtyInput.PlaceholderText = "Beli berapa?"; QtyInput.Text = "2"
 QtyInput.BackgroundColor3 = Color3.fromRGB(35, 35, 35); QtyInput.TextColor3 = Color3.fromRGB(255, 255, 255)
 Instance.new("UICorner", QtyInput)
 
@@ -143,18 +148,22 @@ Status.Text = "Status: Idle"; Status.TextColor3 = Color3.fromRGB(180, 180, 180)
 Status.BackgroundTransparency = 1; Status.Font = Enum.Font.Gotham; Status.TextSize = 11
 
 BuyBtn.MouseButton1Click:Connect(function()
-    local amt = tonumber(QtyInput.Text) or 10
+    local amt = tonumber(QtyInput.Text) or 2
     task.spawn(function()
-        Status.Text = "Status: Interacting..."
+        Status.Text = "Status: Interacting Dealer..."
         if pressE_Global() then
-            task.wait(2)
-            if clickText("yea") then
-                local items = {"Water", "Sugar", "Gelatin"}
+            task.wait(1.5)
+            if clickText("yea") or clickText("shop") then
+                task.wait(1.2)
+                local items = {"Gelatin", "Sugar", "Water"}
                 for _, item in pairs(items) do
                     Status.Text = "Status: Buying "..item
-                    for i = 1, amt do if not clickText(item) then break end task.wait(0.35) end
+                    for i = 1, amt do 
+                        if not clickText(item) then break end
+                        task.wait(0.45) 
+                    end
                 end
-                Status.Text = "Status: Done Buying!"
+                Status.Text = "Status: Buy Done!"
             end
         end
         task.wait(2) Status.Text = "Status: Idle"
