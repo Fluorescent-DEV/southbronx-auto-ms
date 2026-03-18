@@ -1,4 +1,4 @@
--- [[ AUTOMS BY FLUU - FULL FIXED VERSION ]]
+-- [[ AUTOMS BY FLUU - OPTIMIZED COOKING SPEED ]]
 local lp = game.Players.LocalPlayer
 local VIM = game:GetService("VirtualInputManager")
 
@@ -58,7 +58,7 @@ local GelatinCount = createStatLabel("Gelatin", UDim2.new(0, 10, 0, 41))
 local UnfinishedMS = createStatLabel("⏳ Ready to Cook", UDim2.new(0, 10, 0, 62), Color3.fromRGB(255, 165, 0))
 local FinishedMS = createStatLabel("✅ Finished MS", UDim2.new(0, 10, 0, 80), Color3.fromRGB(0, 255, 150))
 
--- 3. CORE FUNCTIONS
+-- 3. CORE FUNCTIONS (UTILITY)
 local function clickText(txt)
     local pGui = lp:WaitForChild("PlayerGui")
     for _, v in pairs(pGui:GetDescendants()) do
@@ -102,7 +102,6 @@ local function pressE_Global()
 
     if closestPrompt then
         fireproximityprompt(closestPrompt)
-        -- Simulasi Keyboard (Penting buat South Bronx)
         VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
         task.wait(0.1)
         VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
@@ -120,7 +119,7 @@ local function safeEquip(itemName)
     for _, t in pairs(b:GetChildren()) do
         if t:IsA("Tool") and string.find(t.Name:lower(), itemName:lower()) then
             c.Humanoid:EquipTool(t)
-            task.wait(0.6)
+            task.wait(0.2)
             return true
         end
     end
@@ -157,7 +156,8 @@ BuyBtn.MouseButton1Click:Connect(function()
                     task.wait(1)
                 end
                 
-                local items = {"Gelatin", "Sugar Block Bag", "Water"}
+                -- [[ URUTAN BELI: WATER -> SUGAR -> GELATIN ]]
+                local items = {"Water", "Sugar Block Bag", "Gelatin"}
                 for _, item in pairs(items) do
                     Status.Text = "Status: Buying "..item
                     for i = 1, amt do 
@@ -188,16 +188,16 @@ end)
 
 task.spawn(function()
     while true do
-        task.wait(0.5)
+        task.wait(0.2)
         if _G.AutoCook then
             pcall(function()
                 local function cookStep(itemName, display)
                     if not _G.AutoCook then return false end
                     if safeEquip(itemName) then
                         Status.Text = "Status: " .. display
+                        task.wait(0.1)
+                        pressE_Global()
                         task.wait(0.4)
-                        pressE_Global() -- Memanggil pressE_Global yang sudah ada VIM
-                        task.wait(1.5)
                         return true
                     end
                     return false
@@ -225,9 +225,9 @@ task.spawn(function()
                 if _G.AutoCook then
                     if safeEquip("Empty") or safeEquip("Jar") then
                         Status.Text = "Status: Collecting..."
-                        task.wait(0.5)
+                        task.wait(0.1)
                         pressE_Global()
-                        task.wait(4)
+                        task.wait(2)
                     end
                 end
             end)
