@@ -1,29 +1,21 @@
--- [[ AUTOMS BY FLUU - UI FIX & AUTO BUY ]]
-repeat task.wait() until game:IsLoaded()
-
+-- [[ AUTOMS BY FLUU - STRUCTURED VERSION ]]
 local lp = game.Players.LocalPlayer
 local VIM = game:GetService("VirtualInputManager")
-local CG = game:GetService("CoreGui")
 
--- 1. CLEANUP & INITIALIZATION (DIPERKUAT)
+-- 1. CLEANUP & INITIALIZATION
 local uiName = "AutomsByFluuFinal"
-for _, v in pairs(CG:GetChildren()) do
-    if v.Name == uiName then v:Destroy() end
-end
-for _, v in pairs(lp.PlayerGui:GetChildren()) do
-    if v.Name == uiName then v:Destroy() end
-end
+pcall(function()
+    if game:GetService("CoreGui"):FindFirstChild(uiName) then game:GetService("CoreGui")[uiName]:Destroy() end
+    if lp.PlayerGui:FindFirstChild(uiName) then lp.PlayerGui[uiName]:Destroy() end
+end)
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = uiName
-ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
-
--- Pastikan UI masuk ke CoreGui (biar gak hilang pas mati)
-local successUI, _ = pcall(function() ScreenGui.Parent = CG end)
+local successUI, _ = pcall(function() ScreenGui.Parent = game:GetService("CoreGui") end)
 if not successUI then ScreenGui.Parent = lp:WaitForChild("PlayerGui") end
 
--- 2. UI DESIGN (TETAP SAMA)
+-- 2. UI DESIGN
 local MainFrame = Instance.new("Frame", ScreenGui)
 MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
 MainFrame.Position = UDim2.new(0.5, -115, 0.5, -190)
@@ -73,17 +65,13 @@ local function clickText(txt)
         if (v:IsA("TextButton") or v:IsA("TextLabel")) and v.Visible then
             if string.find(string.lower(v.Text), string.lower(txt)) then
                 local target = v
-                if not v:IsA("TextButton") then
-                    target = v:FindFirstAncestorWhichIsA("TextButton") or v.Parent
-                end
-                if target then
-                    local pos = target.AbsolutePosition
-                    local size = target.AbsoluteSize
-                    VIM:SendMouseButtonEvent(pos.X + size.X/2, pos.Y + size.Y/2 + 58, 0, true, game, 1)
-                    task.wait(0.1)
-                    VIM:SendMouseButtonEvent(pos.X + size.X/2, pos.Y + size.Y/2 + 58, 0, false, game, 1)
-                    return true
-                end
+                if v:IsA("TextLabel") and v.Parent:IsA("TextButton") then target = v.Parent end
+                local pos = target.AbsolutePosition
+                local size = target.AbsoluteSize
+                VIM:SendMouseButtonEvent(pos.X + size.X/2, pos.Y + size.Y/2 + 58, 0, true, game, 1)
+                task.wait(0.05)
+                VIM:SendMouseButtonEvent(pos.X + size.X/2, pos.Y + size.Y/2 + 58, 0, false, game, 1)
+                return true
             end
         end
     end
@@ -112,7 +100,7 @@ local function pressE_Global()
 
     if closestPrompt then
         fireproximityprompt(closestPrompt)
-        VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+        VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game) -- Simulasi fisik
         task.wait(0.1)
         VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
         return true
@@ -139,7 +127,7 @@ end
 -- 4. AUTO BUY SECTION
 local QtyInput = Instance.new("TextBox", MainFrame)
 QtyInput.Size = UDim2.new(0.85, 0, 0, 30); QtyInput.Position = UDim2.new(0.075, 0, 0.45, 0)
-QtyInput.PlaceholderText = "Beli berapa?"; QtyInput.Text = "2"
+QtyInput.PlaceholderText = "Beli berapa?"; QtyInput.Text = "100"
 QtyInput.BackgroundColor3 = Color3.fromRGB(35, 35, 35); QtyInput.TextColor3 = Color3.fromRGB(255, 255, 255)
 Instance.new("UICorner", QtyInput)
 
@@ -155,20 +143,16 @@ Status.Text = "Status: Idle"; Status.TextColor3 = Color3.fromRGB(180, 180, 180)
 Status.BackgroundTransparency = 1; Status.Font = Enum.Font.Gotham; Status.TextSize = 11
 
 BuyBtn.MouseButton1Click:Connect(function()
-    local amt = tonumber(QtyInput.Text) or 2
+    local amt = tonumber(QtyInput.Text) or 10
     task.spawn(function()
         Status.Text = "Status: Interacting..."
         if pressE_Global() then
             task.wait(2)
-            if clickText("yea") or clickText("shop") then
-                task.wait(1.5)
-                local items = {"Gelatin", "Sugar Block Bag", "Water"}
+            if clickText("yea") then
+                local items = {"Water", "Sugar", "Gelatin"}
                 for _, item in pairs(items) do
                     Status.Text = "Status: Buying "..item
-                    for i = 1, amt do 
-                        if not clickText(item) then break end 
-                        task.wait(0.4) 
-                    end
+                    for i = 1, amt do if not clickText(item) then break end task.wait(0.35) end
                 end
                 Status.Text = "Status: Done Buying!"
             end
@@ -219,7 +203,7 @@ task.spawn(function()
     end
 end)
 
--- 6. STATS REFRESHER
+-- 6. STATS REFRESHER (Looping di Background)
 task.spawn(function()
     while task.wait(2) do
         pcall(function()
@@ -243,5 +227,3 @@ task.spawn(function()
         end)
     end
 end)
-
-print("Automs By Fluu Loaded!")
