@@ -1,4 +1,4 @@
--- [[ AUTOMS BY FLUU - STRUCTURED VERSION ]]
+-- [[ AUTOMS BY FLUU ]]
 local lp = game.Players.LocalPlayer
 local VIM = game:GetService("VirtualInputManager")
 
@@ -58,16 +58,16 @@ local GelatinCount = createStatLabel("Gelatin", UDim2.new(0, 10, 0, 41))
 local UnfinishedMS = createStatLabel("⏳ Ready to Cook", UDim2.new(0, 10, 0, 62), Color3.fromRGB(255, 165, 0))
 local FinishedMS = createStatLabel("✅ Finished MS", UDim2.new(0, 10, 0, 80), Color3.fromRGB(0, 255, 150))
 
--- 3. CORE FUNCTIONS (UTILITY)
+-- 3. CORE FUNCTIONS
 local function clickText(txt)
-    local pGui = lp:WaitForChild("PlayerGui")
-    for _, v in pairs(pGui:GetDescendants()) do
+    for _, v in pairs(lp.PlayerGui:GetDescendants()) do
         if (v:IsA("TextButton") or v:IsA("TextLabel")) and v.Visible then
             if string.find(string.lower(v.Text), string.lower(txt)) then
                 local target = v
                 if v:IsA("TextLabel") and v.Parent:IsA("TextButton") then target = v.Parent end
                 local pos = target.AbsolutePosition
                 local size = target.AbsoluteSize
+                -- Offset 58 untuk menyesuaikan posisi klik di Roblox
                 VIM:SendMouseButtonEvent(pos.X + size.X/2, pos.Y + size.Y/2 + 58, 0, true, game, 1)
                 task.wait(0.05)
                 VIM:SendMouseButtonEvent(pos.X + size.X/2, pos.Y + size.Y/2 + 58, 0, false, game, 1)
@@ -100,9 +100,6 @@ local function pressE_Global()
 
     if closestPrompt then
         fireproximityprompt(closestPrompt)
-        VIM:SendKeyEvent(true, Enum.KeyCode.E, false, game) -- Simulasi fisik
-        task.wait(0.1)
-        VIM:SendKeyEvent(false, Enum.KeyCode.E, false, game)
         return true
     end
     return false
@@ -149,10 +146,19 @@ BuyBtn.MouseButton1Click:Connect(function()
         if pressE_Global() then
             task.wait(2)
             if clickText("yea") then
+                -- DELAY 6 DETIK UNTUK BUKA TOKO
+                for i = 6, 1, -1 do
+                    Status.Text = "Status: Opening Shop ("..i.."s)"
+                    task.wait(1)
+                end
+                
                 local items = {"Water", "Sugar", "Gelatin"}
                 for _, item in pairs(items) do
                     Status.Text = "Status: Buying "..item
-                    for i = 1, amt do if not clickText(item) then break end task.wait(0.35) end
+                    for i = 1, amt do 
+                        if not clickText(item) then break end 
+                        task.wait(0.35) 
+                    end
                 end
                 Status.Text = "Status: Done Buying!"
             end
@@ -177,33 +183,42 @@ end)
 
 task.spawn(function()
     while true do
-        task.wait(1)
+        task.wait(0.1)
         if _G.AutoCook then
-            if safeEquip("Water") then 
-                Status.Text = "Status: Inputting Water"; task.wait(0.3)
-                pressE_Global() 
-                for i=21,1,-1 do if not _G.AutoCook then break end Status.Text = "Water CD ("..i.."s)"; task.wait(1) end 
-            end
-            if _G.AutoCook and safeEquip("Sugar") then 
-                Status.Text = "Status: Inputting Sugar"; task.wait(0.3)
-                pressE_Global(); task.wait(2) 
-            end
-            if _G.AutoCook and safeEquip("Gelatin") then 
-                Status.Text = "Status: Inputting Gelatin"; task.wait(0.3)
-                pressE_Global(); task.wait(2) 
-            end
-            if _G.AutoCook then 
-                for i=46,1,-1 do if not _G.AutoCook then break end Status.Text = "Cooking ("..i.."s)"; task.wait(1) end 
-            end
-            if _G.AutoCook and (safeEquip("Empty") or safeEquip("Jar")) then 
-                Status.Text = "Status: Collecting MS..."; task.wait(0.3)
-                pressE_Global(); task.wait(4) 
-            end
+            pcall(function()
+                local character = lp.Character
+                local humanoid = character:FindFirstChildOfClass("Humanoid")
+                
+                local function forceUse(itemName, display)
+                    local tool = lp.Backpack:FindFirstChild(itemName) or character:FindFirstChild(itemName)
+                    if tool then
+                        Status.Text = "Status: " .. display
+                        humanoid:EquipTool(tool)
+                        task.wait(0.4)
+                        repeat
+                            pressE_Global()
+                            task.wait(0.2)
+                        until not tool.Parent or not _G.AutoCook
+                        return true
+                    end
+                    return false
+                end
+
+                if forceUse("Water", "Water") then
+                    for i=21,1,-1 do if not _G.AutoCook then break end Status.Text = "Water CD ("..i.."s)"; task.wait(1) end 
+                end
+                if _G.AutoCook then forceUse("Sugar", "Sugar") end
+                if _G.AutoCook then forceUse("Gelatin", "Gelatin") end
+                if _G.AutoCook then 
+                    for i=46,1,-1 do if not _G.AutoCook then break end Status.Text = "Cooking ("..i.."s)"; task.wait(1) end 
+                end
+                if _G.AutoCook then forceUse("Empty", "Collecting") end
+            end)
         end
     end
 end)
 
--- 6. STATS REFRESHER (Looping di Background)
+-- 6. STATS REFRESHER
 task.spawn(function()
     while task.wait(2) do
         pcall(function()
